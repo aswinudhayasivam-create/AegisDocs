@@ -1,0 +1,6 @@
+[
+  { "test_id": "T001", "description": "Valid sample data", "expected": "No rule failures", "change": null },
+  { "test_id": "T002", "description": "Missing institution name", "expected": "R002 fails", "change": "institution.institution_name = ''" },
+  { "test_id": "T003", "description": "Missing faculty ID", "expected": "R004 fails for the affected faculty record", "change": "faculty[0].faculty_id = ''" },
+  { "test_id": "T004", "description": "Missing document type", "expected": "R006 fails for the affected document record", "change": "documents[0].document_type = ''" }
+]

@@ -1,0 +1,13 @@
+{
+  "project": "AICTE SmartVerify - Prototype",
+  "notice": "Illustrative prototype rules only. These are NOT official AICTE regulatory requirements. Confirm all real rules against the official problem statement and authorized guidance.",
+  "source": "Member 4 rules R001-R006, copied unchanged from the Member 4 starter data (Oct 24 handover).",
+  "rules": [
+    { "id": "R001", "name": "Application ID is present", "scope": "application", "field": "application_id", "rule_type": "required", "severity": "high", "description": "The application must contain an application ID." },
+    { "id": "R002", "name": "Institution name is present", "scope": "institution", "field": "institution_name", "rule_type": "required", "severity": "high", "description": "The institution name must be provided." },
+    { "id": "R003", "name": "Institution ID is present", "scope": "institution", "field": "institution_id", "rule_type": "required", "severity": "medium", "description": "The institution ID must be provided." },
+    { "id": "R004", "name": "Faculty ID is present", "scope": "faculty", "field": "faculty_id", "rule_type": "required", "severity": "medium", "description": "Each faculty record must have a faculty ID." },
+    { "id": "R005", "name": "Faculty name is present", "scope": "faculty", "field": "faculty_name", "rule_type": "required", "severity": "medium", "description": "Each faculty record must have a faculty name." },
+    { "id": "R006", "name": "Document type is present", "scope": "documents", "field": "document_type", "rule_type": "required", "severity": "low", "description": "Each uploaded document record must have a document type." }
+  ]
+}

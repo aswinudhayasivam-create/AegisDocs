@@ -1,0 +1,2311 @@
+diff -ruN original/.gitignore fixed/.gitignore
+--- original/.gitignore	1970-01-01 05:30:00.000000000 +0530
++++ fixed/.gitignore	2026-10-27 11:06:56.000000000 +0530
+@@ -0,0 +1,5 @@
++node_modules/
++.env
++server/uploads/
++server/data/
++client/dist/
+diff -ruN original/README.md fixed/README.md
+--- original/README.md	2026-10-24 19:28:06.000000000 +0530
++++ fixed/README.md	2026-10-27 11:57:48.613494907 +0530
+@@ -1,113 +1,143 @@
+-# DocuAuth & Compliance AI — Regulatory Verification System (MERN Stack Prototype)
++# ZENITH - AI Application and Document Verification
+ 
+-A full-stack, modular prototype implementing the regulatory compliance and document authentication system for educational institutions (AICTE workflow).
++A Smart India Hackathon prototype by **Team ZENITH**
+ 
+----
++**Theme:** Smart Automation &nbsp;|&nbsp; **Category:** Software
+ 
+-## 🌟 Key Features
++Institutions applying for AICTE approval upload their certificates. This system reads them
++(PDF text, or OCR for scanned images), extracts the key fields, checks them against compliance
++rules, and gives the authority a clear report to accept or reject the application.
+ 
+-1. **Role-Based Portals**:
+-   - **Institution Holder**: Register institutions, submit applications, upload regulatory certificates, and track live review status across all submitted applications.
+-   - **AICTE Authority**: Review applications, inspect OCR extractions and confidence metrics, accept or reject submissions, and download official multi-page PDF compliance reports.
++## How it works
+ 
+-2. **Authentication System**:
+-   - Secure login and registration with username, email, and password.
+-   - Built-in self-service password reset ("Forgot Password").
+-   - Session persistence and instant logout from both dashboards.
++1. **Submit** - an institution creates an application with its basic details.
++2. **Upload** - certificates and records are uploaded as PDFs or scanned images.
++3. **Read** - the server extracts text directly from PDFs, or runs OCR (Tesseract) on scanned images.
++4. **Extract** - key fields (institution name, dates, approval numbers, and so on) are pulled out of the text.
++5. **Check** - the rule engine runs rules R001-R006 (required documents present, name match, certificate expiry, and more).
++6. **Decide** - the authority reviews the dossier, downloads the PDF report, and accepts or rejects.
+ 
+-3. **OCR & Document Processing Engine**:
+-   - PDF & Scanned Image extraction (powered by `unpdf` and `tesseract.js`).
+-   - Cryptographic SHA-256 duplicate document detection.
+-   - Automated regex & structural field extraction (Institution Name, Approval Reference, Issue/Expiry Dates, Intake, Issuing Authority).
+-   - In-app OCR Inspector with confidence indicators and manual field editing modal.
++## Tech stack
+ 
+-4. **Multi-Page Compliance PDF Report Generator**:
+-   - Generates and downloads official multi-page PDF reports.
+-   - Extracted fields are cleanly grouped and displayed separately for each certificate.
+-   - Strictly scopes records to the active application.
++| Layer | Used |
++|---|---|
++| Frontend | React 18 + Vite |
++| Backend | Node.js + Express |
++| OCR | Tesseract.js (English data in `eng.traineddata`) |
++| PDF | pdf-parse / unpdf to read, pdf-lib to generate the report |
++| Storage | Local JSON file (`server/data/db.json`, created on first run) |
++| Tests | Plain Node test suites, no extra framework |
+ 
+----
++Everything used is free and open source.
+ 
+-## 🚀 Quick Start (Running the Application)
++## Project structure
+ 
+-### Prerequisites
+-- Node.js (v18+ or v24+ recommended)
+-- npm
++```
++client/            React web app (Vite)
++server/            Express API: login, upload, OCR, extraction, report
++  rulesEngine/     compliance rule engine
++  config/          validationRules.json (rules R001-R006)
++  test/            automated test suites
++demo-data/         fictional sample data, rules and sample documents for the demo
++docs/              design notes, change log, screenshots, known gaps
++scripts/           optional browser end-to-end test and sample-PDF generator
++eng.traineddata    OCR language data (English)
++```
++
++## Run on Windows (plain steps)
++
++1. Install **Node.js LTS** from https://nodejs.org (free). Restart PowerShell afterwards.
++2. Open PowerShell inside this folder (right-click in the folder, "Open in Terminal").
++3. Install the libraries (needs internet, one time):
++   ```
++   npm run install:all
++   ```
++4. Build the web app (one time, and again after any change in `client/src`):
++   ```
++   npm run build
++   ```
++5. Start the app:
++   ```
++   npm start
++   ```
++6. Open http://localhost:5000 in Chrome.
++
++**Demo logins** (created automatically the first time):
++
++| Role | Username | Password |
++|---|---|---|
++| Institution | `institution` | `password123` |
++| Authority | `authority` | `password123` |
++
++Change these before showing the app to anyone outside the team.
++
++**Forgot password:** the app makes a 6-digit code and prints it in the PowerShell window where
++`npm start` is running (it stands in for an email). Type that code in the app.
++
++## Demo script (about 5 minutes)
++
++1. Log in as `institution`. Open "Submit New Application", fill the form (including Institution ID)
++   and submit. Or import `demo-data/application_data.json` with the import box on the same page.
++2. Upload `demo-data/sample-documents/02_faculty_qualification_record.pdf` (type: Faculty record) and
++   `04_fire_safety_scan_image.png` (type: Fire safety). The second one goes through OCR.
++3. Log out and log in as `authority`. Open "OCR & Extraction" to show fields and confidence, then
++   "Application Dossier" to show the findings (missing approval letter, name mismatch, rule results),
++   download the PDF report, then Accept or Reject.
++4. Optional: the authority's "One-Click Demo" button loads a ready-made 3-document scenario with a
++   name mismatch and an expired certificate.
+ 
+-### 1. Installation
+-In the project root folder:
+-```bash
+-# Install root dependencies (if any)
+-npm install
++## Tests
+ 
+-# Install server dependencies
+-cd server
+-npm install
+-cd ..
++Three automated suites, all passing on this packaged code. Run everything from the project root:
+ 
+-# Install client dependencies
+-cd client
+-npm install
+-npm run build
+-cd ..
+ ```
++npm test
++```
++
++| Suite | Covers |
++|---|---|
++| Backend & OCR engine (`server/test/test-engine.js`) | checksum generation, field extraction, record seeding, name-mismatch and expiry detection |
++| Rule engine (`server/test/test-rules.js`) | 9 tests over rules R001-R006 |
++| API (`server/test/test-api.js`) | 24 tests over login, upload, extraction, decisions, field-edit authorization and bad-file rejection |
++
++The suites use a temporary database, so they never touch your data. Expect "ALL BACKEND & OCR
++ENGINE TESTS PASSED", "9 rule-engine tests passed" and "24 API tests passed".
++
++An optional browser test drives Chrome through the full app (16 checks: institution
++create/import/upload, authority findings, report download, accept, password reset):
+ 
+-### 2. Launch the Application
+-From the project root:
+-```bash
+-npm start
+ ```
+-Open **[http://localhost:5000](http://localhost:5000)** in your browser!
++npm install --no-save puppeteer-core
++node scripts/browser-e2e.js
++```
+ 
+----
++Screenshots from the last browser run are in `docs/screenshots/`.
+ 
+-## 🔑 Pre-Seeded Test Credentials
++## Honest scope and limitations
+ 
+-| Role | Username | Password | Email |
+-| :--- | :--- | :--- | :--- |
+-| **Institution Holder** | `institution` | `password123` | `institution@example.edu.in` |
+-| **AICTE Authority** | `authority` | `password123` | `authority@aicte.gov.in` |
++- This is a **screening aid, not a document-authentication system**. It does not prove a certificate is genuine.
++- All sample data is fictional. The rules in `demo-data` are **illustrative, not official AICTE rules**.
++- OCR was tested only on synthetic sample images made for this demo; there are **no accuracy claims**.
++- Data is stored in a local JSON file, not MongoDB, despite the original "MERN" label.
++- It runs as a local demo: the password-reset code is printed in the server console instead of being emailed.
++- The full, honest list of what is not done: `docs/KNOWN_GAPS.md`.
+ 
+-*(You can also use the one-click credential autofill buttons on the login screen, or click **"Register here"** to create a new account).*
++## Credits
+ 
+----
++- Original working prototype (React client, Express server, upload, OCR, extraction, PDF report): Member 1 & Member 2
++- Compliance rules R001-R006 and sample data: Member 4
++- Security fixes, rule-engine wiring, integration and demo packaging: Member 6 (Aswin Udhaya Sivam)
++- Rule-engine implementation and automated test suites were written with AI assistance under the Member 3 and Member 5 roles
+ 
+-## 📂 Project Architecture
++## More documentation
+ 
+-```
+-ai-application-validator-mern/
+-├── client/                      # React Frontend (Vite)
+-│   ├── dist/                    # Compiled production build
+-│   ├── src/
+-│   │   ├── components/          # Reusable UI (Navbar, WorkflowDiagram, FieldEditorModal)
+-│   │   ├── config/              # API Client & configuration
+-│   │   ├── pages/               # AuthPage, InstitutionDashboard, HomePage,
+-│   │   │                        # OcrInspectorPage, DossierPage, UploadPage, ApplicationPage
+-│   │   └── App.jsx              # Main App entrypoint & role routing
+-│   └── package.json
+-├── server/                      # Node.js / Express Backend
+-│   ├── config/                  # Compliance rules configuration
+-│   ├── data/                    # JSON database (db.json)
+-│   ├── db/                      # Database storage adapter & PBKDF2 auth
+-│   ├── routes/                  # API routes (auth, applications, documents, demo, report)
+-│   ├── services/                # OCR, field extraction, validation, report generation
+-│   ├── uploads/                 # Storage for uploaded PDF and certificate files
+-│   ├── index.js                 # Server entrypoint
+-│   └── package.json
+-├── eng.traineddata              # Tesseract OCR English language model
+-├── package.json                 # Root package scripts
+-└── README.md
+-```
++- `docs/VERIFICATION_2026-10-27.md` - independent re-verification of this package (what was tested, what was fixed, what is still unproven)
++- `docs/EXPLAINER.md` - plain-language explanation of everything and what changed
++- `docs/ROLES.md` - who owns what and what is still missing from each member
++- `docs/CHANGES.md` and `docs/changes-vs-original.diff` - exact changes from the supplied prototype
++- `docs/ORIGINAL_ERRORS_REPORT.md` - errors found in the originally supplied code
++- `docs/ORIGINAL_README_from_Member1-2.md` - the README that came with the supplied prototype (some parts are out of date)
+ 
+----
++## Push this to GitHub
+ 
+-## 🧪 Automated Testing
+-To run the automated backend test suite:
+-```bash
+-cd server
+-npm test
+-```
+-- Test 1: SHA-256 Checksum generation & exact duplicate detection.
+-- Test 2: Key-field extraction on AICTE certificates.
+-- Test 3: Demo scenario seeding & storage persistence.
+-- Test 4: Regulatory compliance validation engine.
++See `GIT-PUSH-GUIDE.md`.
+diff -ruN original/client/package-lock.json fixed/client/package-lock.json
+--- original/client/package-lock.json	2026-10-24 08:18:16.000000000 +0530
++++ fixed/client/package-lock.json	2026-10-27 12:02:11.575787108 +0530
+@@ -748,9 +748,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -859,9 +856,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -876,9 +870,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -893,9 +884,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -910,9 +898,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -927,9 +912,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -944,9 +926,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -961,9 +940,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -978,9 +954,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -995,9 +968,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1012,9 +982,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1029,9 +996,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1046,9 +1010,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1063,9 +1024,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+diff -ruN original/client/src/config/api.js fixed/client/src/config/api.js
+--- original/client/src/config/api.js	2026-10-24 17:46:12.000000000 +0530
++++ fixed/client/src/config/api.js	2026-10-27 11:06:38.000000000 +0530
+@@ -2,14 +2,34 @@
+  * API Service Configuration & Client
+  */
+ 
+-const API_BASE = 'http://localhost:5000/api';
++// Relative address: works when the server hosts the app (npm start) and, in dev mode, through the Vite proxy
++const API_BASE = import.meta.env.VITE_API_BASE || '/api';
++
++// The login token is saved with the user in the browser (see App.jsx)
++function authHeaders() {
++  try {
++    const user = JSON.parse(localStorage.getItem('docuauth_user') || 'null');
++    return user && user.token ? { Authorization: `Bearer ${user.token}` } : {};
++  } catch (_) {
++    return {};
++  }
++}
++
++// If the server says "not logged in" on a protected call, the saved login is old: clear it
++function handleExpired(res, url) {
++  if (res.status === 401 && !url.startsWith('/auth/')) {
++    localStorage.removeItem('docuauth_user');
++    window.location.reload();
++  }
++}
+ 
+ async function fetchJson(url, options = {}) {
+   try {
+     const res = await fetch(`${API_BASE}${url}`, {
+-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+-      ...options
++      ...options,
++      headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) }
+     });
++    handleExpired(res, url);
+     const data = await res.json();
+     if (!res.ok) throw new Error(data.message || `HTTP ${res.status}: Request failed`);
+     return data;
+@@ -35,6 +55,7 @@
+   getApplication:    (id)       => fetchJson(`/applications/${id}`),
+   getCategories:     ()         => fetchJson('/applications/categories/list'),
+   createApplication: (payload)  => fetchJson('/applications', { method: 'POST', body: JSON.stringify(payload) }),
++  importApplication: (data) => fetchJson('/applications/import', { method: 'POST', body: JSON.stringify(data) }),
+   getValidation:     (appId)    => fetchJson(`/applications/${appId}/validation`),
+ 
+   // ── Authority: decision & report ─────────────────────────────────────────
+@@ -44,7 +65,7 @@
+ 
+   // Download full PDF report (triggers browser save-as dialog)
+   downloadReport: async (appId) => {
+-    const res = await fetch(`${API_BASE}/applications/${appId}/report`);
++    const res = await fetch(`${API_BASE}/applications/${appId}/report`, { headers: authHeaders() });
+     if (!res.ok) throw new Error('Failed to generate report');
+     const blob = await res.blob();
+     const url  = URL.createObjectURL(blob);
+@@ -59,7 +80,8 @@
+ 
+   // ── Documents & OCR ──────────────────────────────────────────────────────
+   uploadDocument: async (formData) => {
+-    const res  = await fetch(`${API_BASE}/documents/upload`, { method: 'POST', body: formData });
++    const res  = await fetch(`${API_BASE}/documents/upload`, { method: 'POST', body: formData, headers: authHeaders() });
++    handleExpired(res, '/documents/upload');
+     const data = await res.json();
+     if (!res.ok) throw new Error(data.message || 'Upload failed');
+     return data;
+@@ -70,6 +92,14 @@
+     body: JSON.stringify({ fieldName, newValue: newVal })
+   }),
+ 
++  // Open an uploaded file in a new tab (the file needs the login token, so a plain link will not work)
++  openDocumentFile: async (docId) => {
++    const res = await fetch(`${API_BASE}/documents/${docId}/file`, { headers: authHeaders() });
++    if (!res.ok) throw new Error('Could not open the file.');
++    const blob = await res.blob();
++    window.open(URL.createObjectURL(blob), '_blank');
++  },
++
+   // ── Demo ─────────────────────────────────────────────────────────────────
+   seedDemo:  () => fetchJson('/demo/seed',  { method: 'POST' }),
+   resetDemo: () => fetchJson('/demo/reset', { method: 'POST' }),
+diff -ruN original/client/src/pages/ApplicationPage.jsx fixed/client/src/pages/ApplicationPage.jsx
+--- original/client/src/pages/ApplicationPage.jsx	2026-10-24 18:59:22.000000000 +0530
++++ fixed/client/src/pages/ApplicationPage.jsx	2026-10-27 11:06:38.000000000 +0530
+@@ -7,6 +7,7 @@
+   const [selectedCategory, setSelectedCategory] = useState('EOA_TECHNICAL');
+   const [formData, setFormData] = useState({
+     institutionName: defaultInstitutionName,
++    institutionId: '',
+     applicationId: `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+     representativeName: '',
+     representativeDesignation: 'Principal / Authorized Representative',
+@@ -48,6 +49,7 @@
+       const res = await api.createApplication({
+         institutionName: formData.institutionName,
+         applicationId: formData.applicationId,
++        institutionId: formData.institutionId,
+         category: selectedCategory,
+         submittedBy: submittedBy || formData.representativeEmail || null,
+         representative: {
+@@ -98,6 +100,30 @@
+             <span className="badge badge-blue">Mandatory Step</span>
+           </div>
+ 
++          <div className="form-group" style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10, padding: 12, marginBottom: 16 }}>
++            <label className="form-label">Or import structured application data (Member 4 JSON file)</label>
++            <input
++              type="file"
++              accept=".json,application/json"
++              data-testid="import-json"
++              onChange={async (e) => {
++                const file = e.target.files && e.target.files[0];
++                if (!file) return;
++                setError(null);
++                try {
++                  const data = JSON.parse(await file.text());
++                  const res = await api.importApplication(data);
++                  onApplicationCreated(res.application);
++                } catch (err) {
++                  setError('Import failed: ' + err.message);
++                }
++              }}
++            />
++            <span style={{ fontSize: '0.74rem', color: 'var(--slate-500)', marginTop: '4px', display: 'block' }}>
++              Use demo-data/application_data.json. Blank values are kept so the rules R001-R006 can flag them.
++            </span>
++          </div>
++
+           <form onSubmit={handleSubmit}>
+             <div className="form-group">
+               <label className="form-label">Institution Legal Name *</label>
+@@ -114,6 +140,20 @@
+               </span>
+             </div>
+ 
++            <div className="form-group">
++              <label className="form-label">Institution ID</label>
++              <input
++                type="text"
++                className="form-input"
++                placeholder="e.g., INST001"
++                value={formData.institutionId}
++                onChange={(e) => setFormData({ ...formData, institutionId: e.target.value })}
++              />
++              <span style={{ fontSize: '0.74rem', color: 'var(--slate-500)', marginTop: '4px', display: 'block' }}>
++                Checked by rule R003. Leave blank only to see that rule fail.
++              </span>
++            </div>
++
+             <div className="form-group">
+               <label className="form-label">Application ID</label>
+               <input
+diff -ruN original/client/src/pages/AuthPage.jsx fixed/client/src/pages/AuthPage.jsx
+--- original/client/src/pages/AuthPage.jsx	2026-10-24 17:46:54.000000000 +0530
++++ fixed/client/src/pages/AuthPage.jsx	2026-10-27 12:01:59.835683719 +0530
+@@ -24,6 +24,8 @@
+   const [email, setEmail] = useState('');
+   const [confirmPassword, setConfirmPassword] = useState('');
+   const [institutionName, setInstitutionName] = useState('');
++  const [resetCode, setResetCode] = useState('');
++  const [codeSent, setCodeSent] = useState(false);
+ 
+   // UI status
+   const [loading, setLoading] = useState(false);
+@@ -36,6 +38,8 @@
+     setEmail('');
+     setConfirmPassword('');
+     setInstitutionName('');
++    setResetCode('');
++    setCodeSent(false);
+     setError(null);
+     setSuccessMsg(null);
+   };
+@@ -47,6 +51,9 @@
+ 
+   const handleModeChange = (newMode) => {
+     setMode(newMode);
++    // Public registration is institution-only: authority accounts are privileged and are
++    // provisioned by the administrator (the server also refuses them).
++    if (newMode === 'register') setRole('institution');
+     setError(null);
+     setSuccessMsg(null);
+   };
+@@ -95,17 +102,29 @@
+         if (!username.trim() || !email.trim()) {
+           throw new Error('Please enter both your username and registered email.');
+         }
++        // Step 1: ask for a code. Step 2: send the code with the new password.
++        if (!codeSent) {
++          await api.resetPassword({ role, username: username.trim(), email: email.trim() });
++          setCodeSent(true);
++          setSuccessMsg('A reset code was created. In this demo it is printed in the server window. Enter it below with your new password.');
++          setLoading(false);
++          return;
++        }
+         if (password.length < 6) throw new Error('New password must be at least 6 characters.');
+         if (password !== confirmPassword) throw new Error('Passwords do not match.');
++        if (!resetCode.trim()) throw new Error('Enter the reset code from the server window.');
+ 
+         const res = await api.resetPassword({
+           role,
+           username: username.trim(),
+           email: email.trim(),
++          code: resetCode.trim(),
+           newPassword: password
+         });
+ 
+         if (res.success) {
++          setCodeSent(false);
++          setResetCode('');
+           setSuccessMsg('Password updated successfully! Please log in with your new password.');
+           setMode('login');
+           setPassword('');
+@@ -203,8 +222,12 @@
+           <button
+             type="button"
+             onClick={() => handleRoleChange('authority')}
++            disabled={mode === 'register'}
++            title={mode === 'register' ? 'Authority accounts cannot be self-registered' : undefined}
+             style={{
+               flex: 1,
++              opacity: mode === 'register' ? 0.45 : 1,
++              cursor: mode === 'register' ? 'not-allowed' : 'pointer',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+@@ -236,7 +259,7 @@
+             </h2>
+             <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+               {mode === 'login' && 'Enter your credentials to access your dashboard'}
+-              {mode === 'register' && 'Create your account to start submitting or reviewing applications'}
++              {mode === 'register' && 'Institutions self-register here. Authority accounts are provisioned by the administrator (demo: sign in as "authority").'}
+               {mode === 'forgot' && 'Provide your registered username and email to set a new password'}
+             </p>
+           </div>
+@@ -343,7 +366,29 @@
+               </div>
+             )}
+ 
++            {/* Reset code (forgot password, step 2) */}
++            {mode === 'forgot' && codeSent && (
++              <div>
++                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
++                  Reset code (shown in the server window)
++                </label>
++                <input
++                  type="text"
++                  inputMode="numeric"
++                  maxLength={6}
++                  placeholder="6-digit code"
++                  value={resetCode}
++                  onChange={(e) => setResetCode(e.target.value)}
++                  style={{
++                    width: '100%', boxSizing: 'border-box', padding: '10px 12px',
++                    borderRadius: 10, border: '1.5px solid #cbd5e1', fontSize: '0.9rem', outline: 'none'
++                  }}
++                />
++              </div>
++            )}
++
+             {/* Password field */}
++            {(mode !== 'forgot' || codeSent) && (
+             <div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>
+@@ -383,8 +428,10 @@
+               </div>
+             </div>
+ 
++            )}
++
+             {/* Confirm Password (for Register & Forgot) */}
+-            {(mode === 'register' || mode === 'forgot') && (
++            {(mode === 'register' || (mode === 'forgot' && codeSent)) && (
+               <div>
+                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                   Confirm {mode === 'forgot' ? 'New Password' : 'Password'}
+diff -ruN original/client/src/pages/OcrInspectorPage.jsx fixed/client/src/pages/OcrInspectorPage.jsx
+--- original/client/src/pages/OcrInspectorPage.jsx	2026-10-24 18:25:26.000000000 +0530
++++ fixed/client/src/pages/OcrInspectorPage.jsx	2026-10-27 11:06:38.000000000 +0530
+@@ -187,16 +187,15 @@
+                     {activeDoc.originalName}
+                   </span>
+                 </div>
+-                <a
+-                  href={`http://localhost:5000/api/documents/${activeDoc.id}/file`}
+-                  target="_blank"
+-                  rel="noreferrer"
++                <button
++                  type="button"
++                  onClick={() => api.openDocumentFile(activeDoc.id).catch(err => alert(err.message))}
+                   className="btn btn-secondary btn-sm"
+                   title="Open source file in new tab"
+                 >
+                   <ExternalLink size={14} />
+                   <span>View File</span>
+-                </a>
++                </button>
+               </div>
+ 
+               {/* Document Overview Metadata */}
+diff -ruN original/package.json fixed/package.json
+--- original/package.json	2026-10-24 08:23:02.000000000 +0530
++++ fixed/package.json	2026-10-27 11:06:56.000000000 +0530
+@@ -1,14 +1,14 @@
+ {
+-  "name": "ai-application-validator-mern",
++  "name": "sih-zenith-ai-application-verification",
+   "version": "1.0.0",
+-  "description": "AI-Powered Application Validation, Document Authentication and Regulatory Compliance Verification (MERN Stack Working Prototype for Member 1 & 2)",
++  "description": "AI-Powered Application Validation, Document Authentication and Regulatory Compliance Verification - SIH ZENITH team prototype (React + Node/Express, JSON store)",
+   "scripts": {
+     "start": "node server/index.js",
+-    "test": "node server/test/test-engine.js",
++    "test": "cd server && npm test",
+     "build": "cd client && npm run build",
+     "server": "cd server && npm run dev",
+     "client": "cd client && npm run dev",
+-    "install:all": "cd server && npm install && cd ../client && npm install"
++    "install:all": "cd server && npm install --ignore-scripts && cd ../client && npm install --ignore-scripts"
+   },
+   "keywords": [
+     "mern",
+@@ -17,6 +17,6 @@
+     "regulatory-compliance",
+     "document-verification"
+   ],
+-  "author": "Member 1 & Member 2",
++  "author": "Team ZENITH (SIH)",
+   "license": "ISC"
+ }
+diff -ruN original/server/.env.example fixed/server/.env.example
+--- original/server/.env.example	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/.env.example	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,4 @@
++# Copy this file to server/.env if you need to change a setting. All lines are optional.
++PORT=5000
++# AUTH_SECRET=any-long-random-text   (if not set, one is made and saved in server/data/.auth_secret)
++# CORS_ORIGINS=http://localhost:5173
+diff -ruN original/server/config/complianceRules.json fixed/server/config/complianceRules.json
+--- original/server/config/complianceRules.json	2026-10-24 07:18:30.000000000 +0530
++++ fixed/server/config/complianceRules.json	2026-10-27 11:06:38.000000000 +0530
+@@ -80,6 +80,25 @@
+           "description": "Evidence of adequate classroom, laboratory, and workshop space."
+         }
+       ]
++    },
++    {
++      "id": "SIH_DEMO",
++      "name": "SIH Demo - Institution Application with Faculty Record",
++      "description": "Short checklist for the hackathon demo: an approval letter plus a faculty qualification record.",
++      "requiredDocuments": [
++        {
++          "type": "AICTE_APPROVAL",
++          "label": "Institutional Application / Approval Letter",
++          "mandatory": true,
++          "description": "Application or approval letter naming the institution."
++        },
++        {
++          "type": "FACULTY_RECORD",
++          "label": "Faculty Qualification Record",
++          "mandatory": true,
++          "description": "Record with Faculty ID, Faculty Name and qualification."
++        }
++      ]
+     }
+   ]
+-}
++}
+\ No newline at end of file
+diff -ruN original/server/config/rulesConfig.js fixed/server/config/rulesConfig.js
+--- original/server/config/rulesConfig.js	2026-10-24 07:23:04.000000000 +0530
++++ fixed/server/config/rulesConfig.js	2026-10-27 11:06:38.000000000 +0530
+@@ -55,7 +55,7 @@
+     certificateNumber: {
+       label: 'Certificate / Approval Number',
+       patterns: [
+-        /(?:Certificate\s+(?:No|Number|Ref)\s*[:\-#]?\s*)([A-Z0-9\/\-_.]+)/i,
++        /(?:Certificate\s+(?:No\.?|Number|Reference|Ref\.?)\s*[:\-#]?\s*)([A-Z0-9\/\-_.]+)/i,
+         /(?:Approval\s+(?:No|Number|Letter\s+No|Process\s+Number)\s*[:\-#]?\s*)([A-Z0-9\/\-_.]+)/i,
+         /(?:F\.\s*No\.?\s*[:\-#]?\s*)([A-Z0-9\/\-_.]+)/i,
+         /(?:NOC\s*(?:No|Number)?\s*[:\-#]?\s*)([A-Z0-9\/\-_.]+)/i,
+@@ -108,6 +108,16 @@
+       ]
+     },
+ 
++    facultyId: {
++      label: 'Faculty ID',
++      patterns: [/Faculty\s+ID\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-\/]{1,19})/i]
++    },
++
++    facultyName: {
++      label: 'Faculty Name',
++      patterns: [/Faculty\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z.\s]{1,59}?)(?=\r?\n|$)/i]
++    },
++
+     facultyCount: {
+       label: 'Total Faculty Count',
+       patterns: [
+diff -ruN original/server/config/validationRules.json fixed/server/config/validationRules.json
+--- original/server/config/validationRules.json	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/config/validationRules.json	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,13 @@
++{
++  "project": "AICTE SmartVerify - Prototype",
++  "notice": "Illustrative prototype rules only. These are NOT official AICTE regulatory requirements. Confirm all real rules against the official problem statement and authorized guidance.",
++  "source": "Member 4 rules R001-R006, copied unchanged from the Member 4 starter data (Oct 24 handover).",
++  "rules": [
++    { "id": "R001", "name": "Application ID is present", "scope": "application", "field": "application_id", "rule_type": "required", "severity": "high", "description": "The application must contain an application ID." },
++    { "id": "R002", "name": "Institution name is present", "scope": "institution", "field": "institution_name", "rule_type": "required", "severity": "high", "description": "The institution name must be provided." },
++    { "id": "R003", "name": "Institution ID is present", "scope": "institution", "field": "institution_id", "rule_type": "required", "severity": "medium", "description": "The institution ID must be provided." },
++    { "id": "R004", "name": "Faculty ID is present", "scope": "faculty", "field": "faculty_id", "rule_type": "required", "severity": "medium", "description": "Each faculty record must have a faculty ID." },
++    { "id": "R005", "name": "Faculty name is present", "scope": "faculty", "field": "faculty_name", "rule_type": "required", "severity": "medium", "description": "Each faculty record must have a faculty name." },
++    { "id": "R006", "name": "Document type is present", "scope": "documents", "field": "document_type", "rule_type": "required", "severity": "low", "description": "Each uploaded document record must have a document type." }
++  ]
++}
+diff -ruN original/server/db/store.js fixed/server/db/store.js
+--- original/server/db/store.js	2026-10-24 19:21:08.000000000 +0530
++++ fixed/server/db/store.js	2026-10-27 12:01:59.835683719 +0530
+@@ -11,14 +11,17 @@
+ const path = require('path');
+ const crypto = require('crypto');
+ 
+-const DATA_DIR = path.join(__dirname, '..', 'data');
+-const DB_FILE = path.join(DATA_DIR, 'db.json');
++// DB_FILE can be set to another path (the tests use this so they never touch real data)
++const DB_FILE = process.env.DB_FILE || path.join(__dirname, '..', 'data', 'db.json');
++const DATA_DIR = path.dirname(DB_FILE);
+ 
+ // Ensure data directory exists
+ if (!fs.existsSync(DATA_DIR)) {
+   fs.mkdirSync(DATA_DIR, { recursive: true });
+ }
+ 
++const PBKDF2_ROUNDS = 210000;
++
+ // Initial Database State
+ const defaultState = {
+   users: [],
+@@ -39,15 +42,19 @@
+     this._ensureDefaultUsers();
+   }
+ 
++  // Member 6 fix: 210,000 rounds (was 1,000). Old accounts keep working because
++  // each user records how many rounds their hash used, and are upgraded at login.
+   _hashPassword(password, salt) {
+     if (!salt) salt = crypto.randomBytes(16).toString('hex');
+-    const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+-    return { hash, salt };
++    const hash = crypto.pbkdf2Sync(password, salt, PBKDF2_ROUNDS, 64, 'sha512').toString('hex');
++    return { hash, salt, iterations: PBKDF2_ROUNDS };
+   }
+ 
+-  _verifyPassword(password, hash, salt) {
+-    const calculated = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+-    return calculated === hash;
++  _verifyPassword(password, hash, salt, iterations = 1000) {
++    const calculated = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
++    const a = Buffer.from(calculated);
++    const b = Buffer.from(hash || '');
++    return a.length === b.length && crypto.timingSafeEqual(a, b);
+   }
+ 
+   _ensureDefaultUsers() {
+@@ -64,6 +71,7 @@
+         institutionName: 'Example Engineering College',
+         hash: instCreds.hash,
+         salt: instCreds.salt,
++        iterations: instCreds.iterations,
+         createdAt: new Date().toISOString()
+       });
+       db.users.push({
+@@ -74,6 +82,7 @@
+         institutionName: 'AICTE Regulatory Bureau',
+         hash: authCreds.hash,
+         salt: authCreds.salt,
++        iterations: authCreds.iterations,
+         createdAt: new Date().toISOString()
+       });
+       this._write(db);
+@@ -110,7 +119,7 @@
+     const newApp = {
+       id,
+       applicationId: appData.applicationId || id,
+-      institutionName: appData.institutionName || 'Untitled Institution',
++      institutionName: appData.institutionName === undefined ? 'Untitled Institution' : appData.institutionName,
+       category: appData.category || 'EOA_TECHNICAL',
+       representative: {
+         name: appData.representative?.name || '',
+@@ -118,6 +127,9 @@
+         email: appData.representative?.email || '',
+         phone: appData.representative?.phone || ''
+       },
++      institutionId: appData.institutionId || '',
++      faculty: appData.faculty || [],
++      declaredDocuments: appData.declaredDocuments || [],
+       status: appData.status || 'DRAFT',
+       submittedBy: appData.submittedBy || appData.userId || null,
+       createdAt: appData.createdAt || new Date().toISOString()
+@@ -241,10 +253,19 @@
+     return this.getFieldsByDocument(fieldsArray[0]?.documentId);
+   }
+ 
+-  updateField(documentId, fieldName, newValue, isVerified = true) {
++  updateField(documentId, fieldName, newValue, isVerified = true, editor = null) {
+     const db = this._read();
+     const field = db.extractedFields.find(f => f.documentId === documentId && f.fieldName === fieldName);
+     if (field) {
++      // Keep what the machine originally read (and every earlier correction): a correction
++      // appends to the field's history instead of silently overwriting the previous value.
++      if (!Array.isArray(field.history)) field.history = [];
++      field.history.push({
++        previousValue: field.extractedValue,
++        newValue,
++        editedBy: editor,
++        editedAt: new Date().toISOString()
++      });
+       field.extractedValue = newValue;
+       field.isVerified = isVerified;
+       field.updatedAt = new Date().toISOString();
+@@ -276,6 +297,10 @@
+   }
+ 
+   registerUser({ username, email, password, role, institutionName }) {
++    // Second line of defence: even a future route calling this directly cannot mint an authority.
++    if (role !== 'institution') {
++      throw new Error('Only institution accounts can be self-registered.');
++    }
+     const db = this._read();
+     const cleanUsername = (username || '').trim();
+     const cleanEmail = (email || '').trim().toLowerCase();
+@@ -292,7 +317,7 @@
+       throw new Error(`Email "${cleanEmail}" is already registered for this role.`);
+     }
+ 
+-    const { hash, salt } = this._hashPassword(password);
++    const { hash, salt, iterations } = this._hashPassword(password);
+     const newUser = {
+       id: `USER-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+       username: cleanUsername,
+@@ -301,6 +326,7 @@
+       institutionName: institutionName || (role === 'authority' ? 'AICTE Regulatory Bureau' : 'Institution'),
+       hash,
+       salt,
++      iterations,
+       createdAt: new Date().toISOString()
+     };
+ 
+@@ -323,11 +349,24 @@
+       return { success: false, message: 'Invalid username or password.' };
+     }
+ 
+-    const valid = this._verifyPassword(password, user.hash, user.salt);
++    const valid = this._verifyPassword(password, user.hash, user.salt, user.iterations || 1000);
+     if (!valid) {
+       return { success: false, message: 'Invalid username or password.' };
+     }
+ 
++    // Upgrade an old weak hash now that we know the right password
++    if ((user.iterations || 1000) < PBKDF2_ROUNDS) {
++      const db = this._read();
++      const stored = db.users.find(u => u.id === user.id);
++      if (stored) {
++        const fresh = this._hashPassword(password);
++        stored.hash = fresh.hash;
++        stored.salt = fresh.salt;
++        stored.iterations = fresh.iterations;
++        this._write(db);
++      }
++    }
++
+     return {
+       success: true,
+       user: {
+@@ -341,41 +380,65 @@
+     };
+   }
+ 
+-  resetPassword(role, username, email, newPassword) {
++  /**
++   * Password reset step 1: make a 6-digit code (valid 15 minutes, 5 tries).
++   * Returns the code, or null when no account matches. The caller must NOT
++   * show the code to the person asking: it goes to the server console in this
++   * demo build (a real system would email it).
++   */
++  createResetCode(role, username, email) {
+     const db = this._read();
+-    const cleanUsername = (username || '').trim().toLowerCase();
+-    const cleanEmail = (email || '').trim().toLowerCase();
+-
+-    const userIndex = db.users.findIndex(u => 
++    const user = db.users.find(u =>
+       u.role === role &&
+-      u.username.toLowerCase() === cleanUsername &&
+-      u.email.toLowerCase() === cleanEmail
++      u.username.toLowerCase() === (username || '').trim().toLowerCase() &&
++      u.email.toLowerCase() === (email || '').trim().toLowerCase()
+     );
++    if (!user) return null;
++    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
++    user.resetCodeHash = crypto.createHash('sha256').update(code).digest('hex');
++    user.resetCodeExpires = Date.now() + 15 * 60 * 1000;
++    user.resetCodeTries = 0;
++    this._write(db);
++    return code;
++  }
+ 
+-    if (userIndex === -1) {
+-      throw new Error('No account found with this username and registered email.');
++  /** Password reset step 2: check the code and set the new password. */
++  resetPassword(role, username, email, code, newPassword) {
++    const db = this._read();
++    const user = db.users.find(u =>
++      u.role === role &&
++      u.username.toLowerCase() === (username || '').trim().toLowerCase() &&
++      u.email.toLowerCase() === (email || '').trim().toLowerCase()
++    );
++    const fail = 'The reset code is wrong or has expired. Ask for a new code.';
++    if (!user || !user.resetCodeHash || user.resetCodeExpires < Date.now() || (user.resetCodeTries || 0) >= 5) {
++      throw new Error(fail);
++    }
++    const given = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
++    if (given !== user.resetCodeHash) {
++      user.resetCodeTries = (user.resetCodeTries || 0) + 1;
++      this._write(db);
++      throw new Error(fail);
+     }
+ 
+-    const { hash, salt } = this._hashPassword(newPassword);
+-    db.users[userIndex].hash = hash;
+-    db.users[userIndex].salt = salt;
+-    db.users[userIndex].passwordUpdatedAt = new Date().toISOString();
+-
++    const fresh = this._hashPassword(newPassword);
++    user.hash = fresh.hash;
++    user.salt = fresh.salt;
++    user.iterations = fresh.iterations;
++    user.passwordUpdatedAt = new Date().toISOString();
++    delete user.resetCodeHash;
++    delete user.resetCodeExpires;
++    delete user.resetCodeTries;
+     this._write(db);
+ 
+-    const updated = db.users[userIndex];
+-    return {
+-      id: updated.id,
+-      username: updated.username,
+-      email: updated.email,
+-      role: updated.role,
+-      institutionName: updated.institutionName
+-    };
++    return { id: user.id, username: user.username, email: user.email, role: user.role, institutionName: user.institutionName };
+   }
+ 
+   // Reset or seed database
+   clearAll() {
+-    this._write({ ...defaultState });
++    // Keep the user accounts: only applications, documents and fields are cleared
++    const db = this._read();
++    this._write({ ...defaultState, users: db.users || [] });
+   }
+ }
+ 
+diff -ruN original/server/index.js fixed/server/index.js
+--- original/server/index.js	2026-10-24 17:45:58.000000000 +0530
++++ fixed/server/index.js	2026-10-27 11:57:27.109307635 +0530
+@@ -20,8 +20,11 @@
+ const PORT = process.env.PORT || 5000;
+ 
+ // Enable CORS for React frontend
++// Only the local React app may call the API from a browser (override with CORS_ORIGINS="http://a,http://b")
++const allowedOrigins = (process.env.CORS_ORIGINS ||
++  `http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:${PORT},http://127.0.0.1:${PORT}`).split(',');
+ app.use(cors({
+-  origin: '*',
++  origin: allowedOrigins,
+   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+   allowedHeaders: ['Content-Type', 'Authorization']
+ }));
+@@ -29,8 +32,8 @@
+ app.use(express.json());
+ app.use(express.urlencoded({ extended: true }));
+ 
+-// Serve static uploaded documents
+-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
++// Uploaded documents are NOT served as public files any more.
++// They are only available through GET /api/documents/:id/file, which checks the login.
+ 
+ // Mount API Routes
+ app.use('/api/auth', authRoutes);
+@@ -49,6 +52,20 @@
+   });
+ });
+ 
++// Upload errors from multer (for example a file over the 25 MB limit) arrive here:
++// answer with a clear 400 JSON instead of Express's default 500 HTML page.
++// eslint-disable-next-line no-unused-vars
++app.use((err, req, res, next) => {
++  if (err && err.name === 'MulterError') {
++    const message = err.code === 'LIMIT_FILE_SIZE'
++      ? 'File exceeds the maximum allowed size of 25MB.'
++      : `Upload failed: ${err.message}`;
++    return res.status(400).json({ success: false, message });
++  }
++  console.error('Unhandled server error:', err);
++  res.status(500).json({ success: false, message: 'Internal server error.' });
++});
++
+ // Serve production React client build if present
+ const fs = require('fs');
+ const clientDist = path.join(__dirname, '..', 'client', 'dist');
+@@ -62,8 +79,8 @@
+   });
+ }
+ 
+-// Start Server
+-app.listen(PORT, () => {
++// Start Server (only when run directly, so the tests can load the app without listening)
++if (require.main === module) app.listen(PORT, () => {
+   console.log(`=======================================================`);
+   console.log(`🚀 Validation Backend Engine running on port ${PORT}`);
+   console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
+diff -ruN original/server/middleware/auth.js fixed/server/middleware/auth.js
+--- original/server/middleware/auth.js	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/middleware/auth.js	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,86 @@
++/**
++ * Login tokens (Member 6 fix: the original prototype had no authorization at all).
++ *
++ * A token is "payload.signature". The payload holds the user id, role and an
++ * expiry time. The signature is an HMAC made with a secret that only the server
++ * knows, so nobody can edit a token or invent one.
++ */
++const crypto = require('crypto');
++const fs = require('fs');
++const path = require('path');
++
++const TOKEN_HOURS = 12;
++
++function loadSecret() {
++  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
++  const file = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, '..', 'data', 'db.json')), '.auth_secret');
++  if (fs.existsSync(file)) return fs.readFileSync(file, 'utf-8').trim();
++  const secret = crypto.randomBytes(32).toString('hex');
++  fs.mkdirSync(path.dirname(file), { recursive: true });
++  fs.writeFileSync(file, secret, 'utf-8');
++  return secret;
++}
++
++const SECRET = loadSecret();
++
++function sign(text) {
++  return crypto.createHmac('sha256', SECRET).update(text).digest('base64url');
++}
++
++function createToken(user) {
++  const payload = Buffer.from(JSON.stringify({
++    id: user.id,
++    role: user.role,
++    exp: Date.now() + TOKEN_HOURS * 3600 * 1000
++  })).toString('base64url');
++  return `${payload}.${sign(payload)}`;
++}
++
++function readToken(token) {
++  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
++  const [payload, signature] = token.split('.');
++  const expected = sign(payload);
++  const a = Buffer.from(signature || '');
++  const b = Buffer.from(expected);
++  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
++  try {
++    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8'));
++    if (!data.exp || data.exp < Date.now()) return null;
++    return data;
++  } catch (_) {
++    return null;
++  }
++}
++
++/** Must be logged in. Sets req.user = { id, role }. */
++function requireAuth(req, res, next) {
++  const header = req.headers.authorization || '';
++  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
++  const user = readToken(token);
++  if (!user) {
++    return res.status(401).json({ success: false, message: 'Please log in first.' });
++  }
++  req.user = user;
++  next();
++}
++
++/** Must be logged in with one of the given roles. */
++function requireRole(...roles) {
++  return (req, res, next) => {
++    requireAuth(req, res, () => {
++      if (!roles.includes(req.user.role)) {
++        return res.status(403).json({ success: false, message: 'You are not allowed to do this.' });
++      }
++      next();
++    });
++  };
++}
++
++/** Authority sees everything. An institution sees only what it submitted. */
++function canAccessApplication(user, app) {
++  if (!app) return false;
++  if (user.role === 'authority') return true;
++  return app.submittedBy === user.id;
++}
++
++module.exports = { createToken, readToken, requireAuth, requireRole, canAccessApplication };
+diff -ruN original/server/package.json fixed/server/package.json
+--- original/server/package.json	2026-10-24 08:15:50.000000000 +0530
++++ fixed/server/package.json	2026-10-27 11:06:38.000000000 +0530
+@@ -1,12 +1,12 @@
+ {
+   "name": "ai-application-validator-server",
+   "version": "1.0.0",
+-  "description": "Backend API, OCR and Document Processing Engine for AI Application Validation (Member 2)",
++  "description": "Backend API, OCR and Document Processing Engine for AI Application Validation (Member 2, integrated by Member 6)",
+   "main": "index.js",
+   "scripts": {
+     "start": "node index.js",
+     "dev": "node --watch index.js",
+-    "test": "node test/test-engine.js"
++    "test": "node test/test-engine.js && node test/test-rules.js && node test/test-api.js"
+   },
+   "keywords": [
+     "mern",
+@@ -27,4 +27,4 @@
+     "tesseract.js": "^5.1.1",
+     "unpdf": "^1.9.1"
+   }
+-}
++}
+\ No newline at end of file
+diff -ruN original/server/routes/applicationRoutes.js fixed/server/routes/applicationRoutes.js
+--- original/server/routes/applicationRoutes.js	2026-10-24 14:03:00.000000000 +0530
++++ fixed/server/routes/applicationRoutes.js	2026-10-27 11:06:38.000000000 +0530
+@@ -7,6 +7,20 @@
+ const store = require('../db/store');
+ const complianceConfig = require('../config/complianceRules.json');
+ const validationService = require('../services/validationService');
++const { requireAuth, requireRole, canAccessApplication } = require('../middleware/auth');
++
++// Everything here needs a login. Authority sees all applications; an institution sees only its own.
++router.use(requireAuth);
++
++// Finds the application and checks the logged-in user may use it. Returns null after sending the error.
++function loadAllowedApplication(req, res) {
++  const found = store.getApplicationById(req.params.id);
++  if (!found || !canAccessApplication(req.user, found)) {
++    res.status(404).json({ success: false, message: 'Application not found.' });
++    return null;
++  }
++  return found;
++}
+ 
+ // Get all application categories & requirements
+ router.get('/categories/list', (req, res) => {
+@@ -18,7 +32,7 @@
+ 
+ // List all applications
+ router.get('/', (req, res) => {
+-  const applications = store.getApplications();
++  const applications = store.getApplications().filter(a => canAccessApplication(req.user, a));
+   res.json({
+     success: true,
+     count: applications.length,
+@@ -38,9 +52,16 @@
+     const categoryObj = complianceConfig.applicationCategories.find(c => c.id === category)
+       || complianceConfig.applicationCategories[0];
+ 
++    const finalId = applicationId ? applicationId.trim() : `APP-${Date.now().toString().slice(-6)}`;
++    if (store.getApplicationById(finalId)) {
++      return res.status(409).json({ success: false, message: 'An application with this ID already exists.' });
++    }
++
+     const newApp = store.saveApplication({
++      submittedBy: req.user.id,
++      institutionId: req.body.institutionId ? String(req.body.institutionId).trim() : '',
+       institutionName: institutionName.trim(),
+-      applicationId: applicationId ? applicationId.trim() : `APP-${Date.now().toString().slice(-6)}`,
++      applicationId: finalId,
+       category: categoryObj.id,
+       representative: representative || {},
+       status: 'SUBMITTED'
+@@ -59,10 +80,8 @@
+ 
+ // Get application by ID with checklist and attached documents
+ router.get('/:id', (req, res) => {
+-  const app = store.getApplicationById(req.params.id);
+-  if (!app) {
+-    return res.status(404).json({ success: false, message: 'Application not found.' });
+-  }
++  const app = loadAllowedApplication(req, res);
++  if (!app) return;
+ 
+   const docs = store.getDocuments(app.id);
+   const fields = store.getFieldsByApplication(app.id);
+@@ -93,6 +112,7 @@
+ // Run validation
+ router.get('/:id/validation', (req, res) => {
+   try {
++    if (!loadAllowedApplication(req, res)) return;
+     const results = validationService.validateApplication(req.params.id);
+     res.json({ success: true, validation: results });
+   } catch (err) {
+@@ -101,7 +121,7 @@
+ });
+ 
+ // Update application status (Authority: Accept / Reject / Under Review)
+-router.patch('/:id/status', (req, res) => {
++router.patch('/:id/status', requireRole('authority'), (req, res) => {
+   const { status } = req.body;
+   const VALID = ['SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED'];
+   if (!status || !VALID.includes(status)) {
+@@ -112,4 +132,35 @@
+   res.json({ success: true, message: `Status updated to ${status}.`, application: updated });
+ });
+ 
++// Import structured application data (Member 4's application_data.json format)
++// so the rules R001-R006 can be tested on it. Body example is in demo-data/application_data.json.
++router.post('/import', (req, res) => {
++  try {
++    const d = req.body || {};
++    const finalId = d.application_id ? String(d.application_id).trim() : `APP-${Date.now().toString().slice(-6)}`;
++    if (store.getApplicationById(finalId)) {
++      return res.status(409).json({ success: false, message: 'An application with this ID already exists.' });
++    }
++    const asText = v => (v === undefined || v === null ? '' : String(v));
++    const saved = store.saveApplication({
++      applicationId: finalId,
++      submittedBy: req.user.id,
++      status: 'SUBMITTED',
++      category: 'SIH_DEMO',
++      // Blank values are kept on purpose: the rules decide what is missing.
++      institutionName: asText(d.institution && d.institution.institution_name),
++      institutionId: asText(d.institution && d.institution.institution_id),
++      faculty: Array.isArray(d.faculty) ? d.faculty.map(f => ({
++        faculty_id: asText(f.faculty_id), faculty_name: asText(f.faculty_name), qualification: asText(f.qualification)
++      })) : [],
++      declaredDocuments: Array.isArray(d.documents) ? d.documents.map(x => ({
++        document_id: asText(x.document_id), document_type: asText(x.document_type), file_name: asText(x.file_name)
++      })) : []
++    });
++    res.status(201).json({ success: true, application: saved });
++  } catch (err) {
++    res.status(500).json({ success: false, message: err.message });
++  }
++});
++
+ module.exports = router;
+diff -ruN original/server/routes/authRoutes.js fixed/server/routes/authRoutes.js
+--- original/server/routes/authRoutes.js	2026-10-24 17:45:40.000000000 +0530
++++ fixed/server/routes/authRoutes.js	2026-10-27 12:01:59.835683719 +0530
+@@ -1,6 +1,19 @@
+ const express = require('express');
+ const router = express.Router();
+ const store = require('../db/store');
++const { createToken } = require('../middleware/auth');
++
++// Slow down password guessing: 10 failed logins per username per 15 minutes
++const failedLogins = new Map();
++function tooManyFailures(key) {
++  const rec = failedLogins.get(key);
++  return rec && rec.until > Date.now() && rec.count >= 10;
++}
++function noteFailure(key) {
++  const rec = failedLogins.get(key);
++  if (!rec || rec.until < Date.now()) failedLogins.set(key, { count: 1, until: Date.now() + 15 * 60 * 1000 });
++  else rec.count++;
++}
+ 
+ /**
+  * POST /api/auth/login
+@@ -17,15 +30,21 @@
+       return res.status(400).json({ success: false, message: 'Username and password are required.' });
+     }
+ 
++    const limitKey = `${role}:${String(username).toLowerCase()}`;
++    if (tooManyFailures(limitKey)) {
++      return res.status(429).json({ success: false, message: 'Too many failed attempts. Try again in 15 minutes.' });
++    }
++
+     const result = store.authenticateUser(role, username, password);
+     if (!result.success) {
++      noteFailure(limitKey);
+       return res.status(401).json({ success: false, message: result.message });
+     }
+ 
+     res.json({
+       success: true,
+       message: 'Login successful',
+-      user: result.user
++      user: { ...result.user, token: createToken(result.user) }
+     });
+   } catch (err) {
+     console.error('Auth login error:', err);
+@@ -44,6 +63,12 @@
+     if (!role || !['institution', 'authority'].includes(role)) {
+       return res.status(400).json({ success: false, message: 'Valid role (institution or authority) is required.' });
+     }
++    // Authority is a privileged role (it can accept/reject every application), so it must
++    // never be creatable through the public register form. This demo ships with a seeded
++    // authority login (see README); a real deployment provisions authority accounts out of band.
++    if (role === 'authority') {
++      return res.status(403).json({ success: false, message: 'Authority accounts cannot be self-registered. Use the authority login provided by your administrator (demo: username "authority").' });
++    }
+     if (!username || username.trim().length < 3) {
+       return res.status(400).json({ success: false, message: 'Username must be at least 3 characters long.' });
+     }
+@@ -68,7 +93,7 @@
+     res.status(201).json({
+       success: true,
+       message: 'Account registered successfully',
+-      user
++      user: { ...user, token: createToken(user) }
+     });
+   } catch (err) {
+     res.status(400).json({ success: false, message: err.message || 'Registration failed.' });
+@@ -77,11 +102,16 @@
+ 
+ /**
+  * POST /api/auth/forgot-password
+- * Body: { role: 'institution' | 'authority', username, email, newPassword }
++ * Two steps with the same URL:
++ *   1. Body { role, username, email }                    -> a 6-digit code is made and printed in the
++ *                                                           SERVER console (stand-in for an email).
++ *   2. Body { role, username, email, code, newPassword } -> password is changed if the code is right.
++ * The answer to step 1 is the same whether or not the account exists, so
++ * nobody can use it to find out which usernames are real.
+  */
+ router.post('/forgot-password', (req, res) => {
+   try {
+-    const { role, username, email, newPassword } = req.body;
++    const { role, username, email, code, newPassword } = req.body;
+ 
+     if (!role || !['institution', 'authority'].includes(role)) {
+       return res.status(400).json({ success: false, message: 'Valid role (institution or authority) is required.' });
+@@ -89,12 +119,22 @@
+     if (!username || !email) {
+       return res.status(400).json({ success: false, message: 'Username and registered email are required.' });
+     }
++
++    if (!code) {
++      const made = store.createResetCode(role, username, email);
++      if (made) console.log(`[password reset] code for ${role} "${username}": ${made}  (valid 15 minutes)`);
++      return res.json({
++        success: true,
++        codeRequired: true,
++        message: 'If the account exists, a reset code was created. In this demo build the code is printed in the server window.'
++      });
++    }
++
+     if (!newPassword || newPassword.length < 6) {
+       return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+     }
+ 
+-    const user = store.resetPassword(role, username, email, newPassword);
+-
++    const user = store.resetPassword(role, username, email, code, newPassword);
+     res.json({
+       success: true,
+       message: 'Password reset successfully. You can now log in with your new password.',
+diff -ruN original/server/routes/demoRoutes.js fixed/server/routes/demoRoutes.js
+--- original/server/routes/demoRoutes.js	2026-10-24 07:21:04.000000000 +0530
++++ fixed/server/routes/demoRoutes.js	2026-10-27 11:06:38.000000000 +0530
+@@ -6,11 +6,15 @@
+ const router = express.Router();
+ const sampleDataService = require('../services/sampleDataService');
+ const store = require('../db/store');
++const { requireAuth, requireRole } = require('../middleware/auth');
+ 
+ // One-Click Demo Seeder
+-router.post('/seed', async (req, res) => {
++router.post('/seed', requireAuth, async (req, res) => {
+   try {
+     const result = await sampleDataService.seedDemoScenario();
++    // The demo application belongs to whoever clicked the button
++    const seeded = store.getApplicationById(result.application.id || result.application.applicationId);
++    if (seeded) result.application = store.saveApplication({ ...seeded, submittedBy: req.user.id });
+     res.json({
+       success: true,
+       message: 'Demo scenario seeded successfully (Example Engineering College).',
+@@ -23,7 +27,8 @@
+ });
+ 
+ // Reset demo database
+-router.post('/reset', (req, res) => {
++// Deletes ALL applications, documents and fields (accounts are kept). Authority only.
++router.post('/reset', requireRole('authority'), (req, res) => {
+   try {
+     store.clearAll();
+     res.json({
+diff -ruN original/server/routes/documentRoutes.js fixed/server/routes/documentRoutes.js
+--- original/server/routes/documentRoutes.js	2026-10-24 07:20:54.000000000 +0530
++++ fixed/server/routes/documentRoutes.js	2026-10-27 12:01:59.835683719 +0530
+@@ -8,11 +8,18 @@
+ const path = require('path');
+ const fs = require('fs');
+ const store = require('../db/store');
++const { requireAuth, requireRole, canAccessApplication } = require('../middleware/auth');
++
++// Every route needs a login, and only the owner (or authority) may touch an application's documents.
++router.use(requireAuth);
++function allowedForApplication(req, applicationId) {
++  return canAccessApplication(req.user, store.getApplicationById(applicationId));
++}
+ const preprocessor = require('../services/preprocessor');
+ const ocrService = require('../services/ocrService');
+ const fieldExtractor = require('../services/fieldExtractor');
+ 
+-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
++const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads');
+ if (!fs.existsSync(UPLOADS_DIR)) {
+   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+ }
+@@ -43,8 +50,13 @@
+     }
+ 
+     if (!applicationId) {
++      if (file) fs.unlink(file.path, () => {});
+       return res.status(400).json({ success: false, message: 'Application ID is required.' });
+     }
++    if (!allowedForApplication(req, applicationId)) {
++      if (file) fs.unlink(file.path, () => {});
++      return res.status(404).json({ success: false, message: 'Application not found.' });
++    }
+ 
+     // 1. File validation
+     preprocessor.validateFile(file);
+@@ -106,12 +118,18 @@
+     });
+   } catch (err) {
+     console.error('Upload processing error:', err);
+-    res.status(500).json({ success: false, message: err.message });
++    // Do not leave the rejected upload sitting in the uploads folder.
++    if (req.file) fs.unlink(req.file.path, () => {});
++    res.status(err.statusCode || 500).json({ success: false, message: err.message });
+   }
+ });
+ 
+ // Get document details with fields and raw text
+ router.get('/:id', (req, res) => {
++  const guardDoc = store.getDocumentById(req.params.id);
++  if (!guardDoc || !allowedForApplication(req, guardDoc.applicationId)) {
++    return res.status(404).json({ success: false, message: 'Document not found.' });
++  }
+   const doc = store.getDocumentById(req.params.id);
+   if (!doc) {
+     return res.status(404).json({ success: false, message: 'Document not found.' });
+@@ -128,6 +146,10 @@
+ 
+ // Serve physical file for preview
+ router.get('/:id/file', (req, res) => {
++  const guardDoc = store.getDocumentById(req.params.id);
++  if (!guardDoc || !allowedForApplication(req, guardDoc.applicationId)) {
++    return res.status(404).json({ success: false, message: 'Document not found.' });
++  }
+   const doc = store.getDocumentById(req.params.id);
+   if (!doc || !fs.existsSync(doc.filePath)) {
+     return res.status(404).json({ success: false, message: 'File not found on storage.' });
+@@ -138,14 +160,21 @@
+ });
+ 
+ // Update or manually verify extracted fields (Human-in-the-Loop Review)
+-router.put('/:id/fields', (req, res) => {
++// Human-in-the-loop correction is authority-only: the UI only shows the editor to the
++// authority, and the API must match - otherwise a submitting institution could rewrite an
++// extracted value (for example a mismatched institution name) and make its own finding disappear.
++router.put('/:id/fields', requireRole('authority'), (req, res) => {
++  const guardDoc = store.getDocumentById(req.params.id);
++  if (!guardDoc || !allowedForApplication(req, guardDoc.applicationId)) {
++    return res.status(404).json({ success: false, message: 'Document not found.' });
++  }
+   try {
+     const { fieldName, newValue } = req.body;
+     if (!fieldName) {
+       return res.status(400).json({ success: false, message: 'fieldName is required.' });
+     }
+ 
+-    const updated = store.updateField(req.params.id, fieldName, newValue, true);
++    const updated = store.updateField(req.params.id, fieldName, newValue, true, { id: req.user.id, role: req.user.role });
+     if (!updated) {
+       return res.status(404).json({ success: false, message: 'Field not found for this document.' });
+     }
+@@ -162,6 +191,10 @@
+ 
+ // Delete document
+ router.delete('/:id', (req, res) => {
++  const guardDoc = store.getDocumentById(req.params.id);
++  if (!guardDoc || !allowedForApplication(req, guardDoc.applicationId)) {
++    return res.status(404).json({ success: false, message: 'Document not found.' });
++  }
+   const doc = store.getDocumentById(req.params.id);
+   if (!doc) {
+     return res.status(404).json({ success: false, message: 'Document not found.' });
+diff -ruN original/server/routes/reportRoutes.js fixed/server/routes/reportRoutes.js
+--- original/server/routes/reportRoutes.js	2026-10-24 14:04:14.000000000 +0530
++++ fixed/server/routes/reportRoutes.js	2026-10-27 11:06:38.000000000 +0530
+@@ -6,9 +6,15 @@
+ const express = require('express');
+ const router  = express.Router();
+ const { generateReport } = require('../services/reportService');
++const store = require('../db/store');
++const { requireAuth, canAccessApplication } = require('../middleware/auth');
+ 
+-router.get('/:id/report', async (req, res) => {
++router.get('/:id/report', requireAuth, async (req, res) => {
+   try {
++    const found = store.getApplicationById(req.params.id);
++    if (!found || !canAccessApplication(req.user, found)) {
++      return res.status(404).json({ success: false, message: 'Application not found.' });
++    }
+     const pdfBytes = await generateReport(req.params.id);
+     const filename = `verification_report_${req.params.id}.pdf`;
+     res.setHeader('Content-Type', 'application/pdf');
+diff -ruN original/server/rulesEngine/engine.js fixed/server/rulesEngine/engine.js
+--- original/server/rulesEngine/engine.js	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/rulesEngine/engine.js	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,130 @@
++/**
++ * Rule Engine (Member 3 role)
++ *
++ * NEW IMPLEMENTATION written by Member 6's assistant. It is NOT the team's
++ * separate "ai-validation-engine.zip", which has not been reviewed.
++ *
++ * It reads simple rules (config/validationRules.json, Member 4's R001-R006)
++ * and checks them against structured application data:
++ *
++ *   {
++ *     application_id: "APP001",
++ *     institution: { institution_id: "INST001", institution_name: "ABC College" },
++ *     faculty:   [ { faculty_id: "FAC001", faculty_name: "Arun Kumar" } ],
++ *     documents: [ { document_type: "institutional_application" } ]
++ *   }
++ *
++ * Each rule has a "scope" that says where to look:
++ *   application  -> data[field]
++ *   institution  -> data.institution[field]
++ *   faculty      -> every item in data.faculty
++ *   documents    -> every item in data.documents
++ *
++ * Only rule_type "required" exists today. To add a new type (for example
++ * "date_not_expired"), add one case in checkRule().
++ */
++
++const fs = require('fs');
++const path = require('path');
++
++const DEFAULT_RULES_FILE = path.join(__dirname, '..', 'config', 'validationRules.json');
++
++function loadRules(file = DEFAULT_RULES_FILE) {
++  return JSON.parse(fs.readFileSync(file, 'utf-8')).rules;
++}
++
++function isBlank(value) {
++  return value === undefined || value === null || String(value).trim() === '';
++}
++
++// Returns the list of things a rule should look at: [{ label, record }]
++function targetsFor(rule, data) {
++  switch (rule.scope) {
++    case 'application':
++      return [{ label: 'application', record: data }];
++    case 'institution':
++      return [{ label: 'institution', record: data.institution || {} }];
++    case 'faculty':
++      return (data.faculty || []).map((r, i) => ({ label: `faculty #${i + 1}`, record: r }));
++    case 'documents':
++      return (data.documents || []).map((r, i) => ({ label: `document #${i + 1}`, record: r }));
++    default:
++      return null;
++  }
++}
++
++function checkRule(rule, data) {
++  const targets = targetsFor(rule, data);
++  if (!targets) {
++    return [{ ruleId: rule.id, name: rule.name, severity: rule.severity, status: 'ERROR',
++      target: rule.scope, message: `Unknown scope "${rule.scope}".` }];
++  }
++
++  return targets.map(({ label, record }) => {
++    let passed;
++    switch (rule.rule_type) {
++      case 'required':
++        passed = !isBlank(record[rule.field]);
++        break;
++      default:
++        return { ruleId: rule.id, name: rule.name, severity: rule.severity, status: 'ERROR',
++          target: label, message: `Unknown rule type "${rule.rule_type}".` };
++    }
++    return {
++      ruleId: rule.id,
++      name: rule.name,
++      severity: rule.severity,
++      status: passed ? 'PASS' : 'FAIL',
++      target: label,
++      message: passed ? 'OK' : rule.description
++    };
++  });
++}
++
++/** Run every rule against the data. */
++function evaluate(data, rules = loadRules()) {
++  const results = [];
++  for (const rule of rules) results.push(...checkRule(rule, data));
++  return {
++    results,
++    checked: results.length,
++    passed: results.filter(r => r.status === 'PASS').length,
++    failed: results.filter(r => r.status === 'FAIL').length
++  };
++}
++
++/**
++ * Turn what the app has stored (application + uploaded documents + extracted
++ * fields) into the structured shape above.
++ */
++function buildApplicationData(app, docs = [], fields = []) {
++  // Faculty: use the structured list if the application came from an import,
++  // otherwise build one record per document that had a Faculty ID / Name.
++  let faculty = (app.faculty || []).map(f => ({ ...f }));
++  if (faculty.length === 0) {
++    for (const doc of docs) {
++      const id = fields.find(f => f.documentId === doc.id && f.fieldName === 'facultyId');
++      const name = fields.find(f => f.documentId === doc.id && f.fieldName === 'facultyName');
++      if (id || name) {
++        faculty.push({
++          faculty_id: id ? id.extractedValue : '',
++          faculty_name: name ? name.extractedValue : ''
++        });
++      }
++    }
++  }
++
++  const documents = [
++    ...(app.declaredDocuments || []).map(d => ({ ...d })),
++    ...docs.map(d => ({ document_type: d.documentType, file_name: d.originalName }))
++  ];
++
++  return {
++    application_id: app.applicationId,
++    institution: { institution_id: app.institutionId, institution_name: app.institutionName },
++    faculty,
++    documents
++  };
++}
++
++module.exports = { loadRules, evaluate, buildApplicationData, isBlank };
+diff -ruN original/server/services/fieldExtractor.js fixed/server/services/fieldExtractor.js
+--- original/server/services/fieldExtractor.js	2026-10-24 07:19:32.000000000 +0530
++++ fixed/server/services/fieldExtractor.js	2026-10-27 11:06:38.000000000 +0530
+@@ -62,6 +62,12 @@
+     const faculty = this.extractFacultyCount(cleanText);
+     if (faculty) fields.push(faculty);
+ 
++    // Faculty ID / Faculty Name (used by Member 4 rules R004, R005)
++    const facultyId = this.extractSimple(cleanText, 'facultyId');
++    if (facultyId) fields.push(facultyId);
++    const facultyName = this.extractSimple(cleanText, 'facultyName');
++    if (facultyName) fields.push(facultyName);
++
+     return {
+       documentType: classifiedType,
+       fields
+@@ -261,6 +267,25 @@
+           label: rule.label,
+           extractedValue: match[1].trim(),
+           confidence: 0.85,
++          sourceSnippet: match[0],
++          pageNumber: 1
++        };
++      }
++    }
++    return null;
++  }
++
++  // Plain "label: value" field taken from the first matching pattern in rulesConfig
++  extractSimple(text, key) {
++    const rule = fieldRules[key];
++    for (const pattern of rule.patterns) {
++      const match = text.match(pattern);
++      if (match && match[1]) {
++        return {
++          fieldName: key,
++          label: rule.label,
++          extractedValue: match[1].trim(),
++          confidence: 0.85,
+           sourceSnippet: match[0],
+           pageNumber: 1
+         };
+diff -ruN original/server/services/ocrService.js fixed/server/services/ocrService.js
+--- original/server/services/ocrService.js	2026-10-24 08:16:12.000000000 +0530
++++ fixed/server/services/ocrService.js	2026-10-27 11:06:38.000000000 +0530
+@@ -29,7 +29,10 @@
+       }
+       this.isInitializing = true;
+       try {
+-        this.worker = await createWorker('eng');
++        // Use the English language file shipped in the project root (eng.traineddata)
++        // so OCR works offline and does not depend on the current folder.
++        const rootDir = require('path').join(__dirname, '..', '..');
++        this.worker = await createWorker('eng', 1, { langPath: rootDir, cachePath: rootDir, gzip: false });
+       } catch (err) {
+         console.warn('Tesseract worker init fallback:', err.message);
+       } finally {
+diff -ruN original/server/services/preprocessor.js fixed/server/services/preprocessor.js
+--- original/server/services/preprocessor.js	2026-10-24 07:18:56.000000000 +0530
++++ fixed/server/services/preprocessor.js	2026-10-27 11:57:27.109307635 +0530
+@@ -31,7 +31,9 @@
+     }
+ 
+     if (file.size > MAX_FILE_SIZE) {
+-      throw new Error(`File size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds maximum allowed limit of 25MB.`);
++      const err = new Error(`File size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds maximum allowed limit of 25MB.`);
++      err.statusCode = 400;
++      throw err;
+     }
+ 
+     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+@@ -39,7 +41,9 @@
+     const isExtAllowed = ['pdf', 'png', 'jpg', 'jpeg'].includes(ext);
+ 
+     if (!isMimeAllowed && !isExtAllowed) {
+-      throw new Error(`Unsupported file type: .${ext}. Only PDF, PNG, and JPEG documents are permitted.`);
++      const err = new Error(`Unsupported file type: .${ext}. Only PDF, PNG, and JPEG documents are permitted.`);
++      err.statusCode = 400;
++      throw err;
+     }
+ 
+     return {
+diff -ruN original/server/services/sampleDataService.js fixed/server/services/sampleDataService.js
+--- original/server/services/sampleDataService.js	2026-10-24 08:13:00.000000000 +0530
++++ fixed/server/services/sampleDataService.js	2026-10-27 11:06:38.000000000 +0530
+@@ -16,7 +16,7 @@
+ const ocrService = require('./ocrService');
+ const fieldExtractor = require('./fieldExtractor');
+ 
+-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
++const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads');
+ 
+ class SampleDataService {
+   /**
+@@ -60,6 +60,7 @@
+       id: appId,
+       applicationId: appId,
+       institutionName: 'Example Engineering College',
++      institutionId: 'INST-DEMO-001',
+       category: 'EOA_TECHNICAL',
+       representative: {
+         name: 'Dr. R. K. Sharma',
+diff -ruN original/server/services/validationService.js fixed/server/services/validationService.js
+--- original/server/services/validationService.js	2026-10-24 07:19:46.000000000 +0530
++++ fixed/server/services/validationService.js	2026-10-27 11:06:38.000000000 +0530
+@@ -1,6 +1,7 @@
+ /**
+  * Validation Engine Integration Hook (Prepared for Member 3)
+  * 
++ * Member 3's validation entry point (checks 1-3 are the original basic checks, check 4 runs Member 4's rules via rulesEngine/engine.js).
+  * Demonstrates how Member 3's validation rules plug directly into
+  * the data extracted by Member 2 and registered by Member 1:
+  * - Checks for missing documents against category checklist.
+@@ -11,6 +12,7 @@
+ 
+ const complianceConfig = require('../config/complianceRules.json');
+ const store = require('../db/store');
++const rulesEngine = require('../rulesEngine/engine');
+ 
+ class ValidationService {
+   /**
+@@ -93,8 +95,23 @@
+       }
+     }
+ 
++    // 4. Member 4 rules (R001-R006) run by the rule engine
++    const ruleRun = rulesEngine.evaluate(rulesEngine.buildApplicationData(app, docs, fields));
++    const severityMap = { high: 'ERROR', medium: 'WARNING', low: 'WARNING' };
++    for (const r of ruleRun.results.filter(x => x.status !== 'PASS')) {
++      findings.push({
++        id: `FIND-RULE-${r.ruleId}-${r.target.replace(/\W+/g, '_')}`,
++        checkType: 'RULE_CHECK',
++        severity: severityMap[r.severity] || 'WARNING',
++        title: `${r.ruleId}: ${r.name} (${r.target})`,
++        description: r.message,
++        status: 'REQUIRES_REVIEW'
++      });
++    }
++
+     return {
+       applicationId,
++      rules: { checked: ruleRun.checked, passed: ruleRun.passed, failed: ruleRun.failed },
+       evaluatedAt: new Date().toISOString(),
+       totalFindings: findings.length,
+       errorsCount: findings.filter(f => f.severity === 'ERROR').length,
+diff -ruN original/server/test/_env.js fixed/server/test/_env.js
+--- original/server/test/_env.js	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/test/_env.js	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,11 @@
++// Every test file loads this FIRST. It points the app at a throwaway database and
++// upload folder in the system temp folder, so tests never touch real data.
++const fs = require('fs');
++const os = require('os');
++const path = require('path');
++
++const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sih-test-'));
++process.env.DB_FILE = path.join(dir, 'db.json');
++process.env.UPLOADS_DIR = path.join(dir, 'uploads');
++process.env.AUTH_SECRET = 'test-secret-not-for-real-use';
++module.exports = { dir };
+diff -ruN original/server/test/test-api.js fixed/server/test/test-api.js
+--- original/server/test/test-api.js	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/test/test-api.js	2026-10-27 12:02:19.103853067 +0530
+@@ -0,0 +1,308 @@
++/**
++ * Member 5 role: end-to-end checks through the real HTTP API.
++ * Covers security fixes (login required, roles, ownership, password reset code)
++ * and the full flow with the fictional sample PDFs.
++ *
++ * NOTE: these are checks on a tiny synthetic set. They are NOT an accuracy
++ * measurement of the system on real documents.
++ */
++require('./_env');
++const assert = require('assert');
++const fs = require('fs');
++const path = require('path');
++const http = require('http');
++const app = require('../index');
++
++const SAMPLES = path.join(__dirname, '..', '..', 'demo-data', 'sample-documents');
++let base;
++let passed = 0;
++
++async function call(method, url, { token, body, form, headers = {} } = {}) {
++  const opts = { method, headers: { ...headers } };
++  if (token) opts.headers.Authorization = `Bearer ${token}`;
++  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
++  if (form) opts.body = form;
++  const res = await fetch(base + url, opts);
++  const type = res.headers.get('content-type') || '';
++  const data = type.includes('json') ? await res.json() : Buffer.from(await res.arrayBuffer());
++  return { status: res.status, data, headers: res.headers };
++}
++
++async function test(name, fn) {
++  await fn();
++  passed++;
++  console.log('  ✔', name);
++}
++
++async function login(role, username, password = 'password123') {
++  const r = await call('POST', '/api/auth/login', { body: { role, username, password } });
++  assert.strictEqual(r.status, 200, `login ${username}`);
++  return r.data.user;
++}
++
++function uploadForm(applicationId, documentType, file) {
++  const form = new FormData();
++  form.append('applicationId', applicationId);
++  form.append('documentType', documentType);
++  form.append('document', new Blob([fs.readFileSync(path.join(SAMPLES, file))], { type: 'application/pdf' }), file);
++  return form;
++}
++
++(async () => {
++  const server = http.createServer(app).listen(0);
++  base = `http://127.0.0.1:${server.address().port}`;
++  console.log('API tests (security + full flow)');
++
++  try {
++    const inst = await login('institution', 'institution');
++    const auth = await login('authority', 'authority');
++
++    await test('health check is public', async () => {
++      assert.strictEqual((await call('GET', '/api/health')).status, 200);
++    });
++
++    await test('no login: applications, documents, report, demo seed are refused (401)', async () => {
++      for (const [m, u] of [['GET', '/api/applications'], ['GET', '/api/applications/x'], ['PATCH', '/api/applications/x/status'],
++        ['GET', '/api/applications/x/report'], ['GET', '/api/documents/x'], ['DELETE', '/api/documents/x'],
++        ['POST', '/api/documents/upload'], ['POST', '/api/demo/seed'], ['POST', '/api/demo/reset']]) {
++        const r = await call(m, u, { body: m === 'PATCH' ? { status: 'ACCEPTED' } : undefined });
++        assert.strictEqual(r.status, 401, `${m} ${u} gave ${r.status}`);
++      }
++    });
++
++    await test('forged or edited token is refused', async () => {
++      const bad = inst.token.slice(0, -3) + 'abc';
++      assert.strictEqual((await call('GET', '/api/applications', { token: bad })).status, 401);
++      assert.strictEqual((await call('GET', '/api/applications', { token: 'a.b' })).status, 401);
++    });
++
++    let appA;
++    await test('institution creates an application', async () => {
++      const r = await call('POST', '/api/applications', { token: inst.token, body: {
++        institutionName: 'ABC Engineering College', applicationId: 'APP-T-1', category: 'SIH_DEMO', institutionId: 'INST001' } });
++      assert.strictEqual(r.status, 201);
++      appA = r.data.application;
++      assert.strictEqual(appA.submittedBy, inst.id);
++    });
++
++    await test('duplicate application ID is refused (409)', async () => {
++      const r = await call('POST', '/api/applications', { token: inst.token, body: { institutionName: 'X College', applicationId: 'APP-T-1' } });
++      assert.strictEqual(r.status, 409);
++    });
++
++    await test('institution cannot accept its own application (403); authority can', async () => {
++      const no = await call('PATCH', `/api/applications/${appA.id}/status`, { token: inst.token, body: { status: 'ACCEPTED' } });
++      assert.strictEqual(no.status, 403);
++      const yes = await call('PATCH', `/api/applications/${appA.id}/status`, { token: auth.token, body: { status: 'UNDER_REVIEW' } });
++      assert.strictEqual(yes.status, 200);
++    });
++
++    await test('another institution cannot see or change the application', async () => {
++      const other = await call('POST', '/api/auth/register', { body: { role: 'institution', username: 'other_college', email: 'o@example.edu', password: 'secret123', institutionName: 'Other College' } });
++      assert.strictEqual(other.status, 201);
++      const t = other.data.user.token;
++      assert.strictEqual((await call('GET', `/api/applications/${appA.id}`, { token: t })).status, 404);
++      assert.strictEqual((await call('GET', `/api/applications/${appA.id}/validation`, { token: t })).status, 404);
++      assert.strictEqual((await call('GET', `/api/applications/${appA.id}/report`, { token: t })).status, 404);
++      const list = await call('GET', '/api/applications', { token: t });
++      assert.strictEqual(list.data.count, 0);
++      const up = await call('POST', '/api/documents/upload', { token: t, form: uploadForm(appA.id, 'FACULTY_RECORD', '02_faculty_qualification_record.pdf') });
++      assert.strictEqual(up.status, 404);
++    });
++
++    let docOk;
++    await test('upload faculty record PDF: Faculty ID and Name are extracted', async () => {
++      const r = await call('POST', '/api/documents/upload', { token: inst.token, form: uploadForm(appA.id, 'FACULTY_RECORD', '02_faculty_qualification_record.pdf') });
++      assert.strictEqual(r.status, 201, JSON.stringify(r.data));
++      docOk = r.data.document;
++      const f = Object.fromEntries(r.data.fields.map(x => [x.fieldName, x.extractedValue]));
++      assert.strictEqual(f.facultyId, 'FAC001');
++      assert.strictEqual(f.facultyName, 'Arun Kumar');
++      assert.strictEqual(f.certificateNumber, 'CERT001');
++    });
++
++    await test('validation: faculty rules pass, missing approval letter is flagged', async () => {
++      const r = await call('GET', `/api/applications/${appA.id}/validation`, { token: inst.token });
++      const titles = r.data.validation.findings.map(f => f.title);
++      assert.ok(titles.some(t => t.startsWith('Missing Mandatory Document')), 'missing doc flagged');
++      assert.ok(!titles.some(t => t.startsWith('R004') || t.startsWith('R005')), 'faculty rules should pass');
++      assert.ok(r.data.validation.rules.checked > 0);
++    });
++
++    await test('faculty record without an ID fails rule R004', async () => {
++      const mk = await call('POST', '/api/applications', { token: inst.token, body: { institutionName: 'ABC Engineering College', applicationId: 'APP-T-2', category: 'SIH_DEMO', institutionId: 'INST001' } });
++      await call('POST', '/api/documents/upload', { token: inst.token, form: uploadForm('APP-T-2', 'FACULTY_RECORD', '03_faculty_record_missing_id.pdf') });
++      const v = await call('GET', `/api/applications/${mk.data.application.id}/validation`, { token: inst.token });
++      assert.ok(v.data.validation.findings.some(f => f.title.startsWith('R004')), 'R004 expected');
++    });
++
++    await test('scan-style PNG image: OCR reads institution, certificate number and dates', async () => {
++      const form = new FormData();
++      form.append('applicationId', appA.id);
++      form.append('documentType', 'FIRE_SAFETY_NOC');
++      form.append('document', new Blob([fs.readFileSync(path.join(SAMPLES, '04_fire_safety_scan_image.png'))], { type: 'image/png' }), '04_fire_safety_scan_image.png');
++      const r = await call('POST', '/api/documents/upload', { token: inst.token, form });
++      assert.strictEqual(r.status, 201, JSON.stringify(r.data));
++      assert.strictEqual(r.data.extractionSummary.isDigitalPdf, false);
++      const f = Object.fromEntries(r.data.fields.map(x => [x.fieldName, x.extractedValue]));
++      assert.ok(/ABC Engineering College/i.test(f.institutionName), 'institution: ' + f.institutionName);
++      assert.ok(/FS\/2026\/0042/.test(f.certificateNumber || ''), 'cert no: ' + f.certificateNumber);
++      assert.strictEqual(f.issueDate, '2026-06-01');
++      assert.strictEqual(f.expiryDate, '2027-05-31');
++    });
++
++    await test('only authority may correct extracted fields (institution gets 403)', async () => {
++      const doc = await call('GET', `/api/documents/${docOk.id}`, { token: auth.token });
++      const original = doc.data.fields.find(x => x.fieldName === 'certificateNumber').extractedValue;
++      const no = await call('PUT', `/api/documents/${docOk.id}/fields`, { token: inst.token, body: { fieldName: 'certificateNumber', newValue: 'TAMPERED' } });
++      assert.strictEqual(no.status, 403);
++      const yes = await call('PUT', `/api/documents/${docOk.id}/fields`, { token: auth.token, body: { fieldName: 'certificateNumber', newValue: original } });
++      assert.strictEqual(yes.status, 200);
++      const after = await call('GET', `/api/documents/${docOk.id}`, { token: auth.token });
++      assert.strictEqual(after.data.fields.find(x => x.fieldName === 'certificateNumber').extractedValue, 'CERT001');
++    });
++
++    await test('unsupported file type is refused with 400 and leaves no file behind', async () => {
++      const before = fs.readdirSync(process.env.UPLOADS_DIR).length;
++      const form = new FormData();
++      form.append('applicationId', appA.id);
++      form.append('documentType', 'UNCLASSIFIED');
++      form.append('document', new Blob([Buffer.from('MZ not a document')], { type: 'application/x-msdownload' }), 'fake.exe');
++      const r = await call('POST', '/api/documents/upload', { token: inst.token, form });
++      assert.strictEqual(r.status, 400);
++      assert.ok(/Unsupported file type/.test(r.data.message));
++      assert.strictEqual(fs.readdirSync(process.env.UPLOADS_DIR).length, before, 'no orphan file left in uploads');
++    });
++
++    await test('authority accounts cannot be self-registered; seeded authority still logs in', async () => {
++      const r = await call('POST', '/api/auth/register', { body: { role: 'authority', username: 'rogue_auth2', email: 'r2@x.example', password: 'secret123' } });
++      assert.strictEqual(r.status, 403);
++      const li = await call('POST', '/api/auth/login', { body: { role: 'authority', username: 'rogue_auth2', password: 'secret123' } });
++      assert.strictEqual(li.status, 401, 'the refused account must not exist');
++      const ok = await call('POST', '/api/auth/login', { body: { role: 'authority', username: 'authority', password: 'password123' } });
++      assert.strictEqual(ok.status, 200, 'seeded authority login must keep working');
++    });
++
++    await test('registration rejects role variants and bad input (400)', async () => {
++      for (const role of ['Authority', 'AUTHORITY', 'admin', ' institution', 'institution ']) {
++        const r = await call('POST', '/api/auth/register', { body: { role, username: 'variantx', email: 'v@x.example', password: 'secret123', institutionName: 'X College' } });
++        assert.strictEqual(r.status, 400, `role=${JSON.stringify(role)} gave ${r.status}`);
++      }
++      const noEmail = await call('POST', '/api/auth/register', { body: { role: 'institution', username: 'okuser', password: 'secret123', institutionName: 'X College' } });
++      assert.strictEqual(noEmail.status, 400);
++      const shortPw = await call('POST', '/api/auth/register', { body: { role: 'institution', username: 'okuser', email: 'ok@x.example', password: '123', institutionName: 'X College' } });
++      assert.strictEqual(shortPw.status, 400);
++      const inst = await call('POST', '/api/auth/register', { body: { role: 'institution', username: 'new_college', email: 'n@x.example', password: 'secret123', institutionName: 'New College' } });
++      assert.strictEqual(inst.status, 201, 'normal institution signup must keep working');
++    });
++
++    await test('field corrections keep an audit history (who, when, old value)', async () => {
++      let r = await call('PUT', `/api/documents/${docOk.id}/fields`, { token: auth.token, body: { fieldName: 'certificateNumber', newValue: 'CERT001-REV1' } });
++      assert.strictEqual(r.status, 200);
++      r = await call('PUT', `/api/documents/${docOk.id}/fields`, { token: auth.token, body: { fieldName: 'certificateNumber', newValue: 'CERT001' } });
++      assert.strictEqual(r.status, 200);
++      const doc = await call('GET', `/api/documents/${docOk.id}`, { token: auth.token });
++      const f = doc.data.fields.find(x => x.fieldName === 'certificateNumber');
++      assert.strictEqual(f.extractedValue, 'CERT001');
++      assert.ok(Array.isArray(f.history) && f.history.length >= 2, 'history kept on the field record');
++      const h = f.history;
++      assert.strictEqual(h[h.length - 2].newValue, 'CERT001-REV1');
++      assert.strictEqual(h[h.length - 2].previousValue, 'CERT001');
++      assert.strictEqual(h[h.length - 1].newValue, 'CERT001');
++      assert.strictEqual(h[h.length - 1].previousValue, 'CERT001-REV1');
++      assert.ok(h[h.length - 1].editedBy && h[h.length - 1].editedBy.role === 'authority', 'editor identity recorded');
++    });
++
++    await test('a file over the 25MB limit is refused with a clear 400', async () => {
++      const form = new FormData();
++      form.append('applicationId', appA.id);
++      form.append('documentType', 'UNCLASSIFIED');
++      form.append('document', new Blob([Buffer.alloc(26 * 1024 * 1024, 1)], { type: 'application/pdf' }), 'big.pdf');
++      const r = await call('POST', '/api/documents/upload', { token: inst.token, form });
++      assert.strictEqual(r.status, 400);
++      assert.ok(/25 ?MB/.test(r.data.message), r.data.message);
++    });
++
++    await test('owner can open the file; unauthenticated cannot', async () => {
++      assert.strictEqual((await call('GET', `/api/documents/${docOk.id}/file`, { token: inst.token })).status, 200);
++      assert.strictEqual((await call('GET', `/api/documents/${docOk.id}/file`)).status, 401);
++    });
++
++    await test('uploaded files are not served as public static files', async () => {
++      const r = await call('GET', `/uploads/${path.basename(docOk.filePath)}`);
++      assert.notStrictEqual(r.status, 200);
++    });
++
++    await test('report is a real PDF for the owner', async () => {
++      const r = await call('GET', `/api/applications/${appA.id}/report`, { token: inst.token });
++      assert.strictEqual(r.status, 200);
++      assert.strictEqual(r.data.slice(0, 4).toString(), '%PDF');
++    });
++
++    await test('import Member 4 data: valid passes, blank name fails R002', async () => {
++      const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'demo-data', 'application_data.json'), 'utf-8'));
++      const ok = await call('POST', '/api/applications/import', { token: inst.token, body: data });
++      assert.strictEqual(ok.status, 201);
++      const v1 = await call('GET', `/api/applications/${ok.data.application.id}/validation`, { token: inst.token });
++      assert.strictEqual(v1.data.validation.rules.failed, 0);
++      const bad = { ...data, application_id: 'APP002', institution: { ...data.institution, institution_name: '' } };
++      const r2 = await call('POST', '/api/applications/import', { token: inst.token, body: bad });
++      const v2 = await call('GET', `/api/applications/${r2.data.application.id}/validation`, { token: inst.token });
++      assert.ok(v2.data.validation.findings.some(f => f.title.startsWith('R002')));
++    });
++
++    await test('demo seed works for a logged-in user and the demo flags the planned problems', async () => {
++      const r = await call('POST', '/api/demo/seed', { token: inst.token });
++      assert.strictEqual(r.status, 200, JSON.stringify(r.data));
++      const v = await call('GET', '/api/applications/APP-2026-DEMO-01/validation', { token: inst.token });
++      const types = v.data.validation.findings.map(f => f.checkType);
++      assert.ok(types.includes('CONSISTENCY_CHECK') && types.includes('DATE_VALIDITY_CHECK'));
++    });
++
++    await test('only authority can reset the demo database; accounts survive', async () => {
++      assert.strictEqual((await call('POST', '/api/demo/reset', { token: inst.token })).status, 403);
++      assert.strictEqual((await call('POST', '/api/demo/reset', { token: auth.token })).status, 200);
++      await login('institution', 'institution');
++    });
++
++    await test('password reset needs the emailed code (username + email alone is not enough)', async () => {
++      const old = console.log; let code = null;
++      console.log = (...a) => { const m = String(a[0]).match(/code for .*: (\d{6})/); if (m) code = m[1]; };
++      const step1 = await call('POST', '/api/auth/forgot-password', { body: { role: 'institution', username: 'institution', email: 'institution@example.edu.in' } });
++      console.log = old;
++      assert.strictEqual(step1.data.codeRequired, true);
++      assert.ok(!JSON.stringify(step1.data).includes(code), 'code must not be in the response');
++      const noCode = await call('POST', '/api/auth/forgot-password', { body: { role: 'institution', username: 'institution', email: 'institution@example.edu.in', code: '000000', newPassword: 'hacked123' } });
++      assert.strictEqual(noCode.status, 400);
++      const good = await call('POST', '/api/auth/forgot-password', { body: { role: 'institution', username: 'institution', email: 'institution@example.edu.in', code, newPassword: 'newpass123' } });
++      assert.strictEqual(good.status, 200);
++      await login('institution', 'institution', 'newpass123');
++      const reuse = await call('POST', '/api/auth/forgot-password', { body: { role: 'institution', username: 'institution', email: 'institution@example.edu.in', code, newPassword: 'again12345' } });
++      assert.strictEqual(reuse.status, 400, 'code is one-use');
++    });
++
++    await test('reset answer is the same for an unknown account', async () => {
++      const r = await call('POST', '/api/auth/forgot-password', { body: { role: 'institution', username: 'nobody', email: 'nobody@example.edu' } });
++      assert.strictEqual(r.status, 200);
++      assert.strictEqual(r.data.codeRequired, true);
++    });
++
++    await test('CORS: unknown website origin gets no permission header', async () => {
++      const r = await call('GET', '/api/health', { headers: { Origin: 'http://evil.example' } });
++      assert.ok(!r.headers.get('access-control-allow-origin'));
++    });
++
++    await test('password hashes use 210000 rounds', async () => {
++      const db = JSON.parse(fs.readFileSync(process.env.DB_FILE, 'utf-8'));
++      assert.ok(db.users.every(u => u.iterations === 210000), 'all users upgraded or new');
++    });
++
++    console.log(`\n${passed} API tests passed.`);
++  } catch (err) {
++    console.error('❌ API test failed:', err);
++    process.exitCode = 1;
++  } finally {
++    server.close();
++    setTimeout(() => process.exit(process.exitCode || 0), 200);
++  }
++})();
+diff -ruN original/server/test/test-engine.js fixed/server/test/test-engine.js
+--- original/server/test/test-engine.js	2026-10-24 07:21:30.000000000 +0530
++++ fixed/server/test/test-engine.js	2026-10-27 11:06:38.000000000 +0530
+@@ -3,6 +3,7 @@
+  * Tests Preprocessor, Text Extraction, Field Identifier, and Sample Seeder
+  */
+ 
++require('./_env'); // throwaway database
+ const assert = require('assert');
+ const preprocessor = require('../services/preprocessor');
+ const fieldExtractor = require('../services/fieldExtractor');
+diff -ruN original/server/test/test-rules.js fixed/server/test/test-rules.js
+--- original/server/test/test-rules.js	1970-01-01 05:30:00.000000000 +0530
++++ fixed/server/test/test-rules.js	2026-10-27 11:06:38.000000000 +0530
+@@ -0,0 +1,82 @@
++/**
++ * Member 3 / Member 4 tests: the rule engine and rules R001-R006.
++ * The four cases T001-T004 come from Member 4's test_cases.json.
++ */
++require('./_env');
++const assert = require('assert');
++const fs = require('fs');
++const path = require('path');
++const engine = require('../rulesEngine/engine');
++
++const baseFile = path.join(__dirname, '..', '..', 'demo-data', 'application_data.json');
++const fresh = () => JSON.parse(fs.readFileSync(baseFile, 'utf-8'));
++const failedIds = run => run.results.filter(r => r.status === 'FAIL').map(r => r.ruleId);
++
++let passed = 0;
++function test(name, fn) {
++  fn();
++  passed++;
++  console.log('  ✔', name);
++}
++
++console.log('Rule engine tests (Member 3 + Member 4 data)');
++
++test('rules file has R001-R006', () => {
++  assert.deepStrictEqual(engine.loadRules().map(r => r.id), ['R001', 'R002', 'R003', 'R004', 'R005', 'R006']);
++});
++
++test('T001 valid data: no rule fails', () => {
++  const run = engine.evaluate(fresh());
++  assert.strictEqual(run.failed, 0);
++  assert.strictEqual(run.checked, run.passed);
++});
++
++test('T002 missing institution name: only R002 fails', () => {
++  const d = fresh(); d.institution.institution_name = '';
++  assert.deepStrictEqual(failedIds(engine.evaluate(d)), ['R002']);
++});
++
++test('T003 missing faculty ID: only R004 fails, and it names the faculty record', () => {
++  const d = fresh(); d.faculty[0].faculty_id = '';
++  const run = engine.evaluate(d);
++  assert.deepStrictEqual(failedIds(run), ['R004']);
++  assert.strictEqual(run.results.find(r => r.status === 'FAIL').target, 'faculty #1');
++});
++
++test('T004 missing document type: only R006 fails for that document', () => {
++  const d = fresh(); d.documents[0].document_type = '';
++  const run = engine.evaluate(d);
++  assert.deepStrictEqual(failedIds(run), ['R006']);
++  assert.strictEqual(run.results.find(r => r.status === 'FAIL').target, 'document #1');
++});
++
++test('missing application ID and institution ID fail R001 and R003', () => {
++  const d = fresh(); delete d.application_id; d.institution.institution_id = '   ';
++  assert.deepStrictEqual(failedIds(engine.evaluate(d)).sort(), ['R001', 'R003']);
++});
++
++test('two faculty records: each checked separately', () => {
++  const d = fresh(); d.faculty.push({ faculty_id: 'FAC002', faculty_name: '' });
++  const run = engine.evaluate(d);
++  assert.deepStrictEqual(failedIds(run), ['R005']);
++  assert.strictEqual(run.results.find(r => r.status === 'FAIL').target, 'faculty #2');
++});
++
++test('unknown rule type is reported, not silently passed', () => {
++  const run = engine.evaluate(fresh(), [{ id: 'RX', name: 'x', scope: 'application', field: 'a', rule_type: 'magic', severity: 'low' }]);
++  assert.strictEqual(run.results[0].status, 'ERROR');
++});
++
++test('buildApplicationData reads faculty from extracted fields', () => {
++  const app = { applicationId: 'A1', institutionName: 'X College', institutionId: 'I1' };
++  const docs = [{ id: 'D1', documentType: 'FACULTY_RECORD', originalName: 'f.pdf' }];
++  const fields = [
++    { documentId: 'D1', fieldName: 'facultyId', extractedValue: 'FAC9' },
++    { documentId: 'D1', fieldName: 'facultyName', extractedValue: 'Ravi' }
++  ];
++  const data = engine.buildApplicationData(app, docs, fields);
++  assert.deepStrictEqual(data.faculty, [{ faculty_id: 'FAC9', faculty_name: 'Ravi' }]);
++  assert.strictEqual(data.documents[0].document_type, 'FACULTY_RECORD');
++});
++
++console.log(`\n${passed} rule-engine tests passed.`);

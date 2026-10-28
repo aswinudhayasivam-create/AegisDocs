@@ -1,0 +1,20 @@
+{
+  "application_id": "APP001",
+  "application_date": "2026-10-20",
+  "institution": {
+    "institution_id": "INST001",
+    "institution_name": "ABC Engineering College"
+  },
+  "faculty": [
+    {
+      "faculty_id": "FAC001",
+      "faculty_name": "Arun Kumar",
+      "qualification": "M.E."
+    }
+  ],
+  "documents": [
+    { "document_id": "DOC001", "document_type": "institutional_application", "file_name": "institutional_application.txt" },
+    { "document_id": "DOC002", "document_type": "faculty_information", "file_name": "faculty_information.txt" },
+    { "document_id": "DOC003", "document_type": "faculty_qualification_record", "file_name": "faculty_qualification_record.txt" }
+  ]
+}

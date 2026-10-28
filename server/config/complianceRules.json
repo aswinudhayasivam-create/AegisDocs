@@ -1,0 +1,104 @@
+{
+  "applicationCategories": [
+    {
+      "id": "EOA_TECHNICAL",
+      "name": "Extension of Approval (EoA) - Technical Institution",
+      "description": "Annual renewal and validation of technical programs, faculty compliance, and safety standards.",
+      "requiredDocuments": [
+        {
+          "type": "AICTE_APPROVAL",
+          "label": "AICTE Approval / EoA Previous Letter",
+          "mandatory": true,
+          "description": "Previous year regulatory approval letter with sanctioned intake."
+        },
+        {
+          "type": "FIRE_SAFETY_NOC",
+          "label": "Fire Safety Certificate (NOC)",
+          "mandatory": true,
+          "description": "Valid NOC issued by State Fire & Rescue Services."
+        },
+        {
+          "type": "BUILDING_LAND_SAFETY",
+          "label": "Building / Structural Safety Certificate",
+          "mandatory": true,
+          "description": "Structural stability and barrier-free environment certificate issued by competent PWD engineer."
+        },
+        {
+          "type": "FACULTY_RECORD",
+          "label": "Faculty Cadre & Qualification Record",
+          "mandatory": true,
+          "description": "Certified roster of principal, professors, and assistant professors adhering to AICTE student-faculty ratio."
+        }
+      ]
+    },
+    {
+      "id": "NEW_INSTITUTION",
+      "name": "New Technical Institution Establishment",
+      "description": "Initial establishment application for new colleges, polytechnics, or universities.",
+      "requiredDocuments": [
+        {
+          "type": "SOCIETY_REGISTRATION",
+          "label": "Society / Trust Registration Certificate",
+          "mandatory": true,
+          "description": "Registered deed or certificate under Societies Registration Act."
+        },
+        {
+          "type": "BUILDING_LAND_SAFETY",
+          "label": "Land Ownership & Building Plan Approval",
+          "mandatory": true,
+          "description": "Clear title deed, land use certificate, and approved master plan."
+        },
+        {
+          "type": "FIRE_SAFETY_NOC",
+          "label": "Fire Safety NOC",
+          "mandatory": true,
+          "description": "Provisional fire clearance certificate."
+        }
+      ]
+    },
+    {
+      "id": "INTAKE_VARIATION",
+      "name": "Increase in Intake / New Program Addition",
+      "description": "Application to increase student intake capacity or launch new branches/departments.",
+      "requiredDocuments": [
+        {
+          "type": "AICTE_APPROVAL",
+          "label": "Current Approval Letter",
+          "mandatory": true,
+          "description": "Valid approval letter showing current sanctioned intake."
+        },
+        {
+          "type": "FACULTY_RECORD",
+          "label": "Proposed Faculty & Cadre Ratio",
+          "mandatory": true,
+          "description": "Faculty compliance report covering the expanded intake."
+        },
+        {
+          "type": "BUILDING_LAND_SAFETY",
+          "label": "Additional Built-up Area Certificate",
+          "mandatory": true,
+          "description": "Evidence of adequate classroom, laboratory, and workshop space."
+        }
+      ]
+    },
+    {
+      "id": "SIH_DEMO",
+      "name": "SIH Demo - Institution Application with Faculty Record",
+      "description": "Short checklist for the hackathon demo: an approval letter plus a faculty qualification record.",
+      "requiredDocuments": [
+        {
+          "type": "AICTE_APPROVAL",
+          "label": "Institutional Application / Approval Letter",
+          "mandatory": true,
+          "description": "Application or approval letter naming the institution."
+        },
+        {
+          "type": "FACULTY_RECORD",
+          "label": "Faculty Qualification Record",
+          "mandatory": true,
+          "description": "Record with Faculty ID, Faculty Name and qualification."
+        }
+      ]
+    }
+  ]
+}
